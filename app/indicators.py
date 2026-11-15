@@ -29,6 +29,9 @@ class Indicador:
     fecha: str | None
     color: str          # rojo | amarillo | verde | gris
     razon: str
+    sentido: str = "alza"
+    umbral_amarillo: float | None = None   # valor a partir del cual el indicador pasa a amarillo
+    umbral_rojo: float | None = None       # valor a partir del cual pasa a rojo
 
 
 # clave -> especificación del indicador
@@ -67,7 +70,7 @@ def evaluar_indicador(clave: str, sentido: str, series_dir: Path | None = None) 
         hist = _historia(spec, series_dir)
         ultimo = T.ultimo_dato(hist)
     except (FileNotFoundError, ValueError, IndexError) as e:
-        return Indicador(clave, spec["nombre"], None, spec["unidad"], None, "gris", f"Sin datos suficientes ({e})")
+        return Indicador(clave, spec["nombre"], None, spec["unidad"], None, "gris", f"Sin datos suficientes ({e})", sentido)
     pct = T.percentil_historico(hist, ultimo["valor"])
     adverso = pct if sentido == "alza" else 100 - pct
     color = "rojo" if adverso >= UMBRAL_ROJO else "amarillo" if adverso >= UMBRAL_AMARILLO else "verde"
@@ -75,7 +78,13 @@ def evaluar_indicador(clave: str, sentido: str, series_dir: Path | None = None) 
     razon = (f"{ultimo['valor']:.1f}{spec['unidad']} a {ultimo['fecha'][:7]}; está en el percentil {pct:.0f} de su historia. "
              f"Para este perfil, un valor {texto_sentido} es el movimiento adverso: percentil adverso {adverso:.0f} "
              f"(rojo desde {UMBRAL_ROJO}, amarillo desde {UMBRAL_AMARILLO}).")
-    return Indicador(clave, spec["nombre"], ultimo["valor"], spec["unidad"], ultimo["fecha"], color, razon)
+    serie = hist["valor"].dropna()
+    if sentido == "alza":
+        u_am, u_ro = float(serie.quantile(UMBRAL_AMARILLO / 100)), float(serie.quantile(UMBRAL_ROJO / 100))
+    else:
+        u_am, u_ro = float(serie.quantile(1 - UMBRAL_AMARILLO / 100)), float(serie.quantile(1 - UMBRAL_ROJO / 100))
+    return Indicador(clave, spec["nombre"], ultimo["valor"], spec["unidad"], ultimo["fecha"], color, razon,
+                     sentido, u_am, u_ro)
 
 
 def evaluar(perfil: str, series_dir: Path | None = None) -> dict:

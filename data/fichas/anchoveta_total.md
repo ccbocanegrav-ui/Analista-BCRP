@@ -1,7 +1,9 @@
-> BORRADOR: revisa y ajusta con tu criterio económico antes de presentar.
+> BORRADOR: revisa y ajusta con tu criterio antes de presentar.
 
-**Qué mide.** Toneladas de anchoveta desembarcadas para harina y aceite (Ministerio de la Producción), por mes.
+**En palabras simples.** Son las toneladas de anchoveta que se pescaron en el mes en todo el país, para hacer harina y aceite de pescado.
 
-**Cómo leerlo.** Es estacional: hay temporadas de pesca y vedas, así que compara cada mes con el mismo mes del año anterior, no con el mes anterior.
+**Por qué te importa si tienes un negocio.** La anchoveta es la base de la industria pesquera. Si se pesca menos, se afectan empleos en puertos y plantas, y el precio de la harina.
 
-**Qué no dice.** Un mes con pocas toneladas puede ser veda y no necesariamente crisis. El efecto de El Niño sobre la segunda temporada solo se verá cuando se publiquen esos meses.
+**Cómo leerla.** Hay temporadas de pesca y meses de veda (prohibición), por eso se compara cada período con el mismo período del año pasado.
+
+**Ojo con.** Un mes bajo puede ser solo veda. Con El Niño, la anchoveta se aleja de la costa o se vuelve escasa, y la caída es más fuerte de lo normal.

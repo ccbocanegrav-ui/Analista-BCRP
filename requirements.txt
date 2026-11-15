@@ -1,6 +1,11 @@
-streamlit>=1.40
+streamlit>=1.50
 pandas
+numpy
 requests
 plotly
-anthropic
+folium
+streamlit-folium
+google-genai
+pydantic>=2
+gTTS
 python-dotenv

@@ -1,7 +1,9 @@
-> BORRADOR: revisa y ajusta con tu criterio económico antes de presentar.
+> BORRADOR: revisa y ajusta con tu criterio antes de presentar.
 
-**Qué mide.** La tasa de interés de política monetaria que fija el BCRP.
+**En palabras simples.** Es la tasa de interés que fija el Banco Central. Es como el precio base del dinero en el país.
 
-**Cómo leerlo.** Si sube, el crédito tiende a encarecerse y se enfría la demanda para frenar la inflación. Si baja, se busca estimular la economía. Actúa con rezagos.
+**Por qué te importa si tienes un negocio.** Si sube, los créditos tienden a encarecerse y a ti te cuesta más financiar tu negocio. Si baja, el crédito suele abaratarse.
 
-**Qué no dice.** No es la tasa que paga un cliente en un banco; esas dependen del riesgo y del plazo.
+**Cómo leerla.** Sube cuando el Banco Central quiere frenar los precios y baja cuando quiere dar impulso a la economía. Sus efectos tardan meses.
+
+**Ojo con.** No es lo que te cobra el banco. Tu tasa depende además de tu historial, el plazo y el riesgo.

@@ -1,7 +1,9 @@
-> BORRADOR: revisa y ajusta con tu criterio económico antes de presentar.
+> BORRADOR: revisa y ajusta con tu criterio antes de presentar.
 
-**Qué mide.** Variación porcentual del IPC de alimentos y bebidas en Lima Metropolitana.
+**En palabras simples.** Muestra cuánto cambiaron los precios de alimentos y bebidas, que es lo que más pesa en el gasto de las familias.
 
-**Cómo leerlo.** Alimentos pesan mucho en el gasto de los hogares de menores ingresos, así que su movimiento se siente más. Se usa para vigilar shocks de oferta, por ejemplo por clima.
+**Por qué te importa si tienes un negocio.** Si vendes comida, tienes restaurante o bodega, o compras insumos agrícolas, es la señal más directa de cómo se mueven tus costos.
 
-**Qué no dice.** Falta confirmar en BCRPData si es variación mensual o a 12 meses. No uses acumulados hasta confirmarlo.
+**Cómo leerla.** Si el número sube, los alimentos se encarecieron más. El clima, como El Niño, suele mover esta serie porque afecta la cosecha y la pesca.
+
+**Ojo con.** Aún falta confirmar si es variación de un mes o de 12 meses. No sumes ni compares períodos hasta confirmarlo.

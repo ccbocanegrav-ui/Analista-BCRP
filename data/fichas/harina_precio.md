@@ -1,7 +1,9 @@
-> BORRADOR: revisa y ajusta con tu criterio económico antes de presentar.
+> BORRADOR: revisa y ajusta con tu criterio antes de presentar.
 
-**Qué mide.** El precio de exportación de la harina de pescado, en US$ por tonelada.
+**En palabras simples.** Es el precio al que se vende la harina de pescado, hecha con anchoveta, en dólares por tonelada.
 
-**Cómo leerlo.** La harina sale de la anchoveta. Si hay menos pesca, la oferta baja y el precio puede subir; si hay más, puede bajar. Importa a exportadores, a la industria y a quien compra alimento para animales.
+**Por qué te importa si tienes un negocio.** Si tu negocio es pesca, harina, alimento para animales o crianza (pollos, cerdos, peces), este precio mueve tus ingresos o tus costos.
 
-**Qué no dice.** El precio también depende de la demanda internacional y de otros factores, no solo de El Niño.
+**Cómo leerla.** Si hay menos anchoveta, hay menos harina y el precio tiende a subir. Si hay mucha, tiende a bajar.
+
+**Ojo con.** El precio también depende de la demanda de otros países, no solo de El Niño.

@@ -1,7 +1,9 @@
-> BORRADOR: revisa y ajusta con tu criterio económico antes de presentar.
+> BORRADOR: revisa y ajusta con tu criterio antes de presentar.
 
-**Qué mide.** El promedio mensual del tipo de cambio interbancario (S/ por US$).
+**En palabras simples.** Es el precio promedio del dólar en cada mes, en soles.
 
-**Cómo leerlo.** Sirve para comparar meses o años sin el ruido del día a día.
+**Por qué te importa si tienes un negocio.** Te sirve para comparar un mes con otro o con el año pasado y decidir cuándo conviene cotizar, importar o cobrar en dólares.
 
-**Qué no dice.** Un promedio esconde los picos dentro del mes.
+**Cómo leerla.** Si el promedio de este mes es mayor que el de hace un año, el dólar está más caro que entonces.
+
+**Ojo con.** Un promedio esconde los picos dentro del mes: el día que compres puede ser distinto.
