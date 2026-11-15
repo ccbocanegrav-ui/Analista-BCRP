@@ -1,0 +1,87 @@
+"""Semáforo de exposición. Reglas explícitas y visibles; no es un pronóstico ni una recomendación.
+
+Cada indicador se compara con su PROPIA historia: se calcula en qué percentil cae su último valor.
+Si el movimiento es adverso para el perfil, un percentil alto (o bajo, según el sentido) es señal de alerta.
+Umbrales: rojo si el percentil adverso >= 80; amarillo si >= 60; verde en otro caso.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass, asdict
+from pathlib import Path
+
+from app import transform as T
+from app.data import analitica, cargar
+
+UMBRAL_ROJO = 80
+UMBRAL_AMARILLO = 60
+
+ADVERTENCIA = ("Criterio de Termómetro basado en la historia de cada serie. "
+               "No es un pronóstico ni una recomendación de inversión o de negocio. "
+               "Que dos variables se muevan juntas no prueba que una cause la otra.")
+
+
+@dataclass
+class Indicador:
+    clave: str
+    nombre: str
+    valor: float | None
+    unidad: str
+    fecha: str | None
+    color: str          # rojo | amarillo | verde | gris
+    razon: str
+
+
+# clave -> especificación del indicador
+ESPECIFICACIONES = {
+    "tc_var12": dict(nombre="Tipo de cambio (var. a 12 meses)", sid="tc_interbancario_prom_mensual",
+                     calculo=("var", 12), unidad="%"),
+    "inflacion": dict(nombre="Inflación Lima (12 meses)", sid="ipc_lima", calculo=("analitica", None), unidad="%"),
+    "pbi_yoy": dict(nombre="PBI mensual (var. interanual)", sid="pbi_mensual_yoy", calculo=("analitica", None), unidad="%"),
+    "harina_precio": dict(nombre="Precio de harina de pescado (var. 12 meses)", sid="harina_precio",
+                          calculo=("var", 12), unidad="%"),
+    "anchoveta_6m": dict(nombre="Desembarque de anchoveta (6 meses vs año previo)", sid="anchoveta_total",
+                         calculo=("acum", 6), unidad="%"),
+    "pbi_pesca": dict(nombre="PBI pesca (var. interanual)", sid="pbi_pesca_yoy", calculo=("analitica", None), unidad="%"),
+}
+
+# perfil -> lista de (clave, sentido adverso). "alza": preocupa que suba; "baja": preocupa que baje.
+PERFILES = {
+    "Importador (insumos o mercadería en dólares)": [("tc_var12", "alza"), ("inflacion", "alza"), ("pbi_yoy", "baja")],
+    "Comercio y venta de alimentos": [("inflacion", "alza"), ("tc_var12", "alza"), ("pbi_yoy", "baja")],
+    "Exportador (ingresos en dólares)": [("tc_var12", "baja"), ("pbi_yoy", "baja")],
+    "Pesca y harina de pescado": [("harina_precio", "baja"), ("anchoveta_6m", "baja"), ("pbi_pesca", "baja")],
+}
+
+
+def _historia(spec: dict, series_dir: Path | None):
+    kind, n = spec["calculo"]
+    if kind == "analitica":
+        return analitica(spec["sid"], series_dir)
+    raw = cargar(spec["sid"], series_dir)
+    return T.serie_variacion(raw, n) if kind == "var" else T.acumulado_interanual(raw, n)
+
+
+def evaluar_indicador(clave: str, sentido: str, series_dir: Path | None = None) -> Indicador:
+    spec = ESPECIFICACIONES[clave]
+    try:
+        hist = _historia(spec, series_dir)
+        ultimo = T.ultimo_dato(hist)
+    except (FileNotFoundError, ValueError, IndexError) as e:
+        return Indicador(clave, spec["nombre"], None, spec["unidad"], None, "gris", f"Sin datos suficientes ({e})")
+    pct = T.percentil_historico(hist, ultimo["valor"])
+    adverso = pct if sentido == "alza" else 100 - pct
+    color = "rojo" if adverso >= UMBRAL_ROJO else "amarillo" if adverso >= UMBRAL_AMARILLO else "verde"
+    texto_sentido = "alto" if sentido == "alza" else "bajo"
+    razon = (f"{ultimo['valor']:.1f}{spec['unidad']} a {ultimo['fecha'][:7]}; está en el percentil {pct:.0f} de su historia. "
+             f"Para este perfil, un valor {texto_sentido} es el movimiento adverso: percentil adverso {adverso:.0f} "
+             f"(rojo desde {UMBRAL_ROJO}, amarillo desde {UMBRAL_AMARILLO}).")
+    return Indicador(clave, spec["nombre"], ultimo["valor"], spec["unidad"], ultimo["fecha"], color, razon)
+
+
+def evaluar(perfil: str, series_dir: Path | None = None) -> dict:
+    inds = [evaluar_indicador(c, s, series_dir) for c, s in PERFILES[perfil]]
+    con_datos = [i for i in inds if i.color != "gris"]
+    rojos = sum(i.color == "rojo" for i in con_datos)
+    amarillos = sum(i.color == "amarillo" for i in con_datos)
+    general = "gris" if not con_datos else "rojo" if rojos >= 2 else "amarillo" if (rojos == 1 or amarillos >= 2) else "verde"
+    return {"perfil": perfil, "general": general, "indicadores": [asdict(i) for i in inds], "advertencia": ADVERTENCIA}

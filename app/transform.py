@@ -49,3 +49,21 @@ def percentil_historico(serie: pd.DataFrame, valor: float) -> float:
 def ultimo_dato(serie: pd.DataFrame) -> dict:
     d = serie.dropna().sort_values("fecha").iloc[-1]
     return {"fecha": d["fecha"].strftime("%Y-%m-%d"), "valor": float(d["valor"])}
+
+
+def serie_variacion(serie: pd.DataFrame, periodos: int) -> pd.DataFrame:
+    """Variación % de cada dato frente a 'periodos' atrás (historia completa)."""
+    d = serie.dropna().sort_values("fecha").reset_index(drop=True).copy()
+    d["valor"] = (d["valor"] / d["valor"].shift(periodos) - 1) * 100
+    return d.dropna().reset_index(drop=True)
+
+
+def acumulado_interanual(serie: pd.DataFrame, meses: int) -> pd.DataFrame:
+    """Suma de los últimos 'meses' frente a la suma de los mismos meses un año antes (variación %).
+
+    Útil para series estacionales como el desembarque de anchoveta. Requiere serie mensual continua.
+    """
+    d = serie.dropna().sort_values("fecha").reset_index(drop=True).copy()
+    suma = d["valor"].rolling(meses).sum()
+    d["valor"] = (suma / suma.shift(12) - 1) * 100
+    return d.dropna().reset_index(drop=True)
