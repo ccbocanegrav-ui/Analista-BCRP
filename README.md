@@ -159,7 +159,7 @@ Usé Claude como agente de programación. El agente escribió el código; yo pus
 
 **Lo que generó el agente:**
 - **Fases 1-3:** propuso y programó las funciones de la app. Esto incluye la descarga de BCRPData y NOAA, los resúmenes en lenguaje simple, el semáforo, el plan, el mapa, el simulador, el chat con herramientas, el verificador de cifras, el explicador de noticias, el RAG de documentos, la voz y la evaluación.
-- **Con Claude Code (16 nov.):**
+- **Con Claude Code:**
   - Completó los archivos que faltaban de la fase 3.
   - Diagnosticó los errores de cuota (429) y de saturación (503) de Gemini.
   - Agregó el respaldo automático entre modelos, la caché de 24 h y el **modo rápido** de 1 llamada (`app/rapido.py`), que usa Gemini Flash-Lite y responde en unos 5 s.
