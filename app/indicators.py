@@ -75,9 +75,12 @@ def evaluar_indicador(clave: str, sentido: str, series_dir: Path | None = None) 
     adverso = pct if sentido == "alza" else 100 - pct
     color = "rojo" if adverso >= UMBRAL_ROJO else "amarillo" if adverso >= UMBRAL_AMARILLO else "verde"
     texto_sentido = "alto" if sentido == "alza" else "bajo"
-    razon = (f"{ultimo['valor']:.1f}{spec['unidad']} a {ultimo['fecha'][:7]}; está en el percentil {pct:.0f} de su historia. "
-             f"Para este perfil, un valor {texto_sentido} es el movimiento adverso: percentil adverso {adverso:.0f} "
-             f"(rojo desde {UMBRAL_ROJO}, amarillo desde {UMBRAL_AMARILLO}).")
+    # En palabras simples (una usuaria no entendió "percentil 85"; ver docs/research/entrevista-1.md).
+    desde = str(hist["fecha"].min())[:4]
+    razon = (f"{ultimo['valor']:.1f}{spec['unidad']} a {ultimo['fecha'][:7]}: está más {texto_sentido} que en "
+             f"{adverso:.0f} de cada 100 meses desde {desde}. Para este tipo de negocio, lo preocupante es que esté "
+             f"{texto_sentido}. Se pone rojo cuando está más {texto_sentido} que en {UMBRAL_ROJO} de cada 100 meses "
+             f"y amarillo desde {UMBRAL_AMARILLO}.")
     serie = hist["valor"].dropna()
     if sentido == "alza":
         u_am, u_ro = float(serie.quantile(UMBRAL_AMARILLO / 100)), float(serie.quantile(UMBRAL_ROJO / 100))
