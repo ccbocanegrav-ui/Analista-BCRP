@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
 from pathlib import Path
 
 from app import docs, geo, indicators, narrativa, negocio, plan
@@ -199,6 +200,18 @@ def _contenido(historial: list[dict], pregunta: str) -> list:
     return out
 
 
+def _generar(cliente, modelo, contenidos, config, intentos: int = 3, espera: float = 15.0):
+    """Llama a Gemini y reintenta si el servidor está saturado (503) o se vence el plazo (504)."""
+    from google.genai import errors
+    for i in range(intentos):
+        try:
+            return cliente.models.generate_content(model=modelo, contents=contenidos, config=config)
+        except errors.ServerError:
+            if i == intentos - 1:
+                raise
+            time.sleep(espera * (i + 1))
+
+
 def responder(cliente, historial: list[dict], pregunta: str, series_dir: Path | None = None,
               modelo: str | None = None, contexto: str = "") -> dict:
     """Ciclo de llamadas a herramientas con Gemini. 'historial' son mensajes previos {role, content: str}."""
@@ -207,12 +220,13 @@ def responder(cliente, historial: list[dict], pregunta: str, series_dir: Path | 
     contenidos = _contenido(historial, pregunta)
     config = types.GenerateContentConfig(
         system_instruction=SISTEMA + (f"\n\nCONTEXTO DEL USUARIO (datos que él declaró):\n{contexto}" if contexto else ""), tools=_declaraciones(), max_output_tokens=1500,
-        automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True))
+        automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
+        http_options=types.HttpOptions(timeout=90_000))   # 90 s por llamada: si Gemini se cuelga, da error en vez de esperar para siempre
     resultados: list[str] = []
     usadas: list[str] = []
     trazas: list[dict] = []
     for _ in range(MAX_VUELTAS):
-        resp = cliente.models.generate_content(model=modelo, contents=contenidos, config=config)
+        resp = _generar(cliente, modelo, contenidos, config)
         llamadas = resp.function_calls or []
         if not llamadas:
             texto = (resp.text or "").strip()

@@ -8,4 +8,6 @@ streamlit-folium
 google-genai
 pydantic>=2
 gTTS
+pypdf
+reportlab
 python-dotenv

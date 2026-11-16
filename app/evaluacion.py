@@ -48,7 +48,7 @@ def evaluar_verificador() -> dict:
             "precision": tp / (tp + fp) if tp + fp else None}
 
 
-def evaluar_chat(cliente, casos: list[dict] | None = None, series_dir=None, modelo: str = chat.MODELO) -> dict:
+def evaluar_chat(cliente, casos: list[dict] | None = None, series_dir=None, modelo: str | None = None) -> dict:
     casos = casos or json.loads(PREGUNTAS.read_text(encoding="utf-8"))
     filas = []
     for c in casos:

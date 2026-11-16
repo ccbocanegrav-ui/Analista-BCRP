@@ -8,7 +8,7 @@ from __future__ import annotations
 from pydantic import BaseModel, Field, field_validator
 
 from app import periodista
-from app.chat import MODELO
+from app.chat import elegir_modelo
 
 
 class Punto(BaseModel):
@@ -42,9 +42,10 @@ SISTEMA = ("Eres un redactor económico para emprendedores que no saben de econo
            "los hechos que recibes: no agregues cifras, fechas ni causas que no estén en ellos. Palabras simples.")
 
 
-def generar(cliente, hs: list[dict], modelo: str = MODELO) -> tuple[NotaPeriodistica, list[str]]:
+def generar(cliente, hs: list[dict], modelo: str | None = None) -> tuple[NotaPeriodistica, list[str]]:
     """Devuelve (nota validada, cifras no respaldadas). Lanza ValueError si el modelo no cumple el esquema."""
     from google.genai import types
+    modelo = modelo or elegir_modelo(cliente)
     hechos_txt = "\n".join(f"- {h['texto']} (serie {h['fuente']})" for h in hs)
     resp = cliente.models.generate_content(
         model=modelo, contents=f"Hechos:\n{hechos_txt}",

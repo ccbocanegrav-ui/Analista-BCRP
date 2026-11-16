@@ -4,3 +4,6 @@ __pycache__/
 .venv/
 .pytest_cache/
 .streamlit/secrets.toml
+
+# PDFs pesados: se descargan del BCRP; el índice data/docs_index.json sí se sube
+data/docs/*.pdf
