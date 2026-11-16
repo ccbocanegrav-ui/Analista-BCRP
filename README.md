@@ -83,7 +83,7 @@ flowchart LR
     subgraph Datos oficiales
         B[API BCRPData] -->|scripts/fetch_bcrp.py| S[(data/series/*.csv)]
         N[NOAA Niño 1+2] -->|scripts/fetch_noaa.py| S
-        P[Reporte de Inflación PDF] -->|scripts/indexar_docs.py| I[(data/docs_index.json)]
+        P[PDF oficiales: Reporte de Inflación,<br/>Programa Monetario, comunicado ENFEN] -->|scripts/indexar_docs.py| I[(data/docs_index.json)]
     end
     UI --> C[Chat<br/>app/chat.py · app/rapido.py]
     C -->|1. elige herramientas| H[Herramientas en código<br/>resúmenes, semáforo, mapa,<br/>simulador, búsqueda en docs]
@@ -132,7 +132,7 @@ Las respuestas repetidas salen de la caché y no cuestan tokens.
 
 | Sesión | Herramienta | Dónde está |
 |---|---|---|
-| **08** | **LLM con salidas estructuradas y RAG** | `app/noticia.py` (JSON validado con pydantic), `app/estructurado.py`; RAG sobre el Reporte de Inflación en `app/docs.py` y `scripts/indexar_docs.py`, con cita de página |
+| **08** | **LLM con salidas estructuradas y RAG** | `app/noticia.py` (JSON validado con pydantic), `app/estructurado.py`; RAG sobre 3 documentos oficiales (Reporte de Inflación de setiembre 2026, nota del Programa Monetario de noviembre 2026 y comunicado ENFEN N° 20-2026) en `app/docs.py` y `scripts/indexar_docs.py`, con cita de página |
 | **05** | **Dashboards** | `app/streamlit_app.py`: 7 pestañas con gráficos de Plotly |
 | 03 | APIs | `app/bcrp.py`, `scripts/fetch_bcrp.py`, `scripts/fetch_noaa.py` |
 | 06 | Folium | Mapa de regiones pesqueras: `app/geo.py` y la pestaña “Mapa y sensibilidad” |
