@@ -19,7 +19,7 @@ from app.data import analitica, buscar_fichas, catalogo, externa, info
 # Alias "latest" de Gemini Flash; si tu curso usa otro modelo, cámbialo con la variable GEMINI_MODEL.
 MODELO = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")   # solo se usa si no se puede consultar la lista de modelos
 MAX_VUELTAS = 6
-_MODELO_CACHE: dict[int, list[str]] = {}
+_MODELO_CACHE: dict = {}
 
 SISTEMA = """Eres el analista de Termómetro BCRP + El Niño. Hablas con emprendedores que NO saben de economía.
 Reglas:
@@ -86,7 +86,8 @@ def ejecutar_herramienta(nombre: str, args: dict, series_dir: Path | None = None
             t = geo.tabla_regional(series_dir)
             cols = ["nombre", "toneladas_12m", "participacion_pct", "caida_promedio_episodios"]
             return {"regiones": t[cols].round(1).to_dict("records") if not t.empty else [],
-                    "nota": "Solo las 5 regiones incluidas en el catálogo."}
+                    "que_mide": "Pesca de anchoveta (desembarques en toneladas) por región. NO mide agro ni otros sectores.",
+                "nota": "Solo las 5 regiones incluidas en el catálogo."}
         if nombre == "simular_margen":
             a = {k: float(v) for k, v in args.items()}
             r = negocio.margen_resultante(a["margen_pct"], a["ingreso_usd_pct"], a["costo_usd_pct"], a["var_tc_pct"],
@@ -210,15 +211,39 @@ def _es_recuperable(e: Exception) -> bool:
     return "timeout" in type(e).__name__.lower()
 
 
-def con_respaldo(cliente, funcion, modelo: str | None = None):
+def modelos_lite(cliente) -> list[str]:
+    """Modelos Flash-Lite estables, del más nuevo al más antiguo. Son los más rápidos y los menos saturados;
+    alcanzan para el modo rápido, donde el modelo solo redacta con datos ya calculados por el código."""
+    clave = ("lite", id(cliente))
+    if clave not in _MODELO_CACHE:
+        lista = []
+        try:
+            for m in cliente.models.list():
+                nombre = (getattr(m, "name", "") or "").replace("models/", "")
+                acciones = getattr(m, "supported_actions", None) or []
+                if ("generateContent" in acciones and re.fullmatch(r"gemini-\d+(\.\d+)?-flash-lite", nombre)):
+                    lista.append(nombre)
+        except Exception:  # noqa: BLE001
+            pass
+        _MODELO_CACHE[clave] = sorted(lista, key=_version, reverse=True)
+    return _MODELO_CACHE[clave]
+
+
+TIEMPO_MAXIMO = 90   # segundos: pasado esto no se prueba otro modelo y se avisa al usuario
+
+
+def con_respaldo(cliente, funcion, modelo: str | None = None, modelos: list[str] | None = None):
     """Ejecuta funcion(modelo) con el modelo indicado o, si no se indica, con cada candidato hasta que uno funcione."""
-    modelos = [modelo] if modelo else modelos_candidatos(cliente)
+    modelos = [modelo] if modelo else (modelos or modelos_candidatos(cliente))
     fallos: dict[str, Exception] = {}
+    inicio = time.time()
     for vuelta in range(2):   # 2.ª vuelta: solo los saturados (5xx), que suelen recuperarse en segundos
         pendientes = modelos if vuelta == 0 else [m for m, e in fallos.items() if getattr(e, "code", None) in (500, 503)]
         if vuelta and pendientes:
-            time.sleep(8)
+            time.sleep(5)
         for m in pendientes:
+            if fallos and time.time() - inicio > TIEMPO_MAXIMO:
+                raise SinModeloDisponible(fallos)
             try:
                 return funcion(m)
             except Exception as e:  # noqa: BLE001

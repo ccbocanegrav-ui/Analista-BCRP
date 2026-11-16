@@ -31,24 +31,35 @@ REGLAS: list[tuple[tuple[str, ...], str, dict]] = [
     (("nino", "clima", "mar ", "calentamiento", "anomalia", "enfen", "noaa", "temperatura"), "anomalia_nino", {}),
     (("nino", "episodio", "anchoveta", "pesca"), "episodios_el_nino", {}),
     (("anchoveta", "pesca", "pesquer"), "resumen_serie", {"id": "anchoveta_total"}),
-    (("region", "piura", "ancash", "libertad", "ica", "mapa"), "exposicion_regional", {}),
+    (("region", "mapa"), "exposicion_regional", {}),
     (("harina",), "resumen_serie", {"id": "harina_precio"}),
 ]
 PERFIL_CLAVES = [
     (("harina", "pesca", "pesquer", "anchoveta"), PESCA),
     (("importo", "importador", "importa", "mercaderia", "insumos"), IMPORTADOR),
-    (("exporto", "exportador", "exporta"), EXPORTADOR),
+    (("exporto", "exportador", "exporta", "agroexport"), EXPORTADOR),
     (("bodega", "restaurante", "pollo", "comida", "alimento", "tienda", "brasa"), ALIMENTOS),
 ]
 DOCUMENTOS = ("reporte", "documento", "bcrp dice", "segun", "proyeccion", "proyecta", "espera", "se espera", "expectativa",
               "por que", "causa", "comunicado", "enfen", "programa monetario", "decidi", "decision", "pronostico", "alerta")
-NEGOCIO = ("expuest", "riesgo", "semaforo", "mi negocio", "tengo un", "tengo una", "que hago", "plan", "afecta")
+NEGOCIO = ("expuest", "riesgo", "semaforo", "mi negocio", "tengo un", "tengo una", "soy ", "que hago", "plan", "afecta")
+CIUDADES = ("piura", "paita", "sullana", "talara", "ancash", "chimbote", "libertad", "trujillo", "ica", "pisco", "lima", "callao")
+PESQUERO = ("pesca", "pesquer", "anchoveta", "harina", "pescado", "puerto", "desembarque")
 MAX_HERRAMIENTAS = 5
+# Letras de otros alfabetos: a veces los modelos Lite se "escapan" a otro idioma en medio del texto.
+OTRO_ALFABETO = re.compile(r"[Ѐ-ӿ֐-׿؀-ۿऀ-ॿ฀-๿぀-ヿ一-鿿가-힯]")
+
+
+class TextoDefectuoso(Exception):
+    """La respuesta trae letras de otro idioma: se descarta y se prueba con el siguiente modelo."""
+    code = 500
 
 SISTEMA_RAPIDO = chat.SISTEMA.replace("tus herramientas", "la sección DATOS").replace("una herramienta", "la sección DATOS") + """
 
 MODO RÁPIDO: ya consultamos los datos por ti; están abajo en DATOS (en JSON). No tienes herramientas.
-Responde SOLO con esos datos. Si no alcanzan para responder, dilo y sugiere qué sí puedes contar (las series del catálogo)."""
+Responde SOLO con esos datos. Si no alcanzan para responder, dilo y sugiere qué sí puedes contar (las series del catálogo).
+Usa solo los datos que sí tienen relación con la pregunta (por ejemplo, no uses datos de pesca para un negocio agrícola).
+Escribe todo en español."""
 
 
 def _normalizar(t: str) -> str:
@@ -77,6 +88,9 @@ def elegir_herramientas(pregunta: str, historial: list[dict] | None = None) -> l
     for claves, nombre, args in REGLAS:
         if _hay(claves, q):
             agregar(nombre, args)
+    # El mapa regional mide pesca de anchoveta: una ciudad solo lo activa si la pregunta es de pesca.
+    if _hay(CIUDADES, q) and _hay(PESQUERO, q):
+        agregar("exposicion_regional", {})
     if _hay(DOCUMENTOS, q):
         agregar("buscar_documentos", {"consulta": pregunta})
     if q.strip(" ¿¡").startswith(("que es", "que significa", "como funciona")) or not elegidas:
@@ -111,9 +125,14 @@ def responder(cliente, historial: list[dict], pregunta: str, series_dir: Path | 
 
     def llamar(m):
         resp = chat._generar(cliente, m, contenidos, config)
-        return m, (resp.text or "").strip()
+        texto = (resp.text or "").strip()
+        if OTRO_ALFABETO.search(texto):
+            raise TextoDefectuoso(f"{m} respondió con letras de otro idioma")
+        return m, texto
 
-    usado, texto = chat.con_respaldo(cliente, llamar, modelo)
+    # Primero Flash-Lite (rápido y poco saturado; aquí solo redacta), luego los Flash normales de respaldo.
+    modelos = None if modelo else chat.modelos_lite(cliente) + chat.modelos_candidatos(cliente)
+    usado, texto = chat.con_respaldo(cliente, llamar, modelo, modelos)
     cuerpo, seguimientos = chat.separar_seguimientos(texto)
     return {"texto": cuerpo, "seguimientos": seguimientos, "herramientas": [t["herramienta"] for t in trazas],
             "trazas": trazas, "modelo": usado,
