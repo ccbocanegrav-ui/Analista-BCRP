@@ -5,5 +5,7 @@ __pycache__/
 .pytest_cache/
 .streamlit/secrets.toml
 
-# PDFs pesados: se descargan del BCRP; el índice data/docs_index.json sí se sube
+# PDFs pesados: se descargan del BCRP; el indice data/docs_index.json si se sube
 data/docs/*.pdf
+# Respuestas del chat guardadas localmente (24 h)
+data/cache_chat.json

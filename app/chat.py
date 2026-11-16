@@ -17,7 +17,7 @@ from app.data import analitica, buscar_fichas, catalogo, info
 # Alias "latest" de Gemini Flash; si tu curso usa otro modelo, cámbialo con la variable GEMINI_MODEL.
 MODELO = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")   # solo se usa si no se puede consultar la lista de modelos
 MAX_VUELTAS = 6
-_MODELO_CACHE: dict[int, str] = {}
+_MODELO_CACHE: dict[int, list[str]] = {}
 
 SISTEMA = """Eres el analista de Termómetro BCRP + El Niño. Hablas con emprendedores que NO saben de economía.
 Reglas:
@@ -156,8 +156,20 @@ def elegir_modelo(cliente) -> str:
     """Si GEMINI_MODEL está definido, lo usa. Si no, pregunta a la API qué modelos Flash estables tiene tu clave y elige el más nuevo."""
     if os.environ.get("GEMINI_MODEL"):
         return os.environ["GEMINI_MODEL"]
-    if id(cliente) in _MODELO_CACHE:
-        return _MODELO_CACHE[id(cliente)]
+    return modelos_candidatos(cliente)[0]
+
+
+def modelos_candidatos(cliente) -> list[str]:
+    """Modelos Flash estables en orden de preferencia (GEMINI_MODEL primero, si está). Se usan de respaldo uno tras otro,
+    porque en el plan gratuito cada modelo tiene su propia cuota diaria."""
+    preferido = os.environ.get("GEMINI_MODEL")
+    if id(cliente) not in _MODELO_CACHE:
+        _MODELO_CACHE[id(cliente)] = _listar_flash(cliente)
+    lista = _MODELO_CACHE[id(cliente)]
+    return ([preferido] if preferido else []) + [m for m in lista if m != preferido] or [MODELO]
+
+
+def _listar_flash(cliente) -> list[str]:
     candidatos = []
     try:
         for m in cliente.models.list():
@@ -170,9 +182,46 @@ def elegir_modelo(cliente) -> str:
             candidatos.append(nombre)
     except Exception:  # noqa: BLE001
         pass
-    elegido = max(candidatos, key=lambda n: (_version(n), -len(n))) if candidatos else MODELO
-    _MODELO_CACHE[id(cliente)] = elegido
-    return elegido
+    return sorted(candidatos, key=lambda n: (_version(n), -len(n)), reverse=True) or [MODELO]
+
+
+def _es_recuperable(e: Exception) -> bool:
+    """Errores en que conviene probar con otro modelo: cuota agotada (429), saturación (5xx) o tiempo de espera."""
+    codigo = getattr(e, "code", None)
+    if codigo in (404, 429, 500, 503, 504):   # 404: modelo retirado para tu cuenta
+        return True
+    return "timeout" in type(e).__name__.lower()
+
+
+def con_respaldo(cliente, funcion, modelo: str | None = None):
+    """Ejecuta funcion(modelo) con el modelo indicado o, si no se indica, con cada candidato hasta que uno funcione."""
+    modelos = [modelo] if modelo else modelos_candidatos(cliente)
+    ultimo = None
+    for m in modelos:
+        try:
+            return funcion(m)
+        except Exception as e:  # noqa: BLE001
+            if not _es_recuperable(e):
+                raise
+            ultimo = e
+    raise ultimo
+
+
+CACHE_CHAT = Path(__file__).resolve().parents[1] / "data" / "cache_chat.json"
+CACHE_HORAS = 24
+
+
+def _clave_cache(historial: list[dict], pregunta: str, contexto: str) -> str:
+    import hashlib
+    base = json.dumps([[m["role"], m["content"]] for m in historial] + [pregunta.strip().lower(), contexto], ensure_ascii=False)
+    return hashlib.sha256(base.encode("utf-8")).hexdigest()
+
+
+def _leer_cache() -> dict:
+    try:
+        return json.loads(CACHE_CHAT.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return {}
 
 
 def separar_seguimientos(texto: str) -> tuple[str, list[str]]:
@@ -200,23 +249,40 @@ def _contenido(historial: list[dict], pregunta: str) -> list:
     return out
 
 
-def _generar(cliente, modelo, contenidos, config, intentos: int = 3, espera: float = 15.0):
-    """Llama a Gemini y reintenta si el servidor está saturado (503) o se vence el plazo (504)."""
-    from google.genai import errors
+def _generar(cliente, modelo, contenidos, config, intentos: int = 2, espera: float = 5.0):
+    """Llama a Gemini; si el servidor está saturado (503) reintenta una vez antes de pasar a otro modelo."""
     for i in range(intentos):
         try:
             return cliente.models.generate_content(model=modelo, contents=contenidos, config=config)
-        except errors.ServerError:
-            if i == intentos - 1:
+        except Exception as e:  # noqa: BLE001
+            if getattr(e, "code", None) != 503 or i == intentos - 1:
                 raise
-            time.sleep(espera * (i + 1))
+            time.sleep(espera)
 
 
 def responder(cliente, historial: list[dict], pregunta: str, series_dir: Path | None = None,
-              modelo: str | None = None, contexto: str = "") -> dict:
-    """Ciclo de llamadas a herramientas con Gemini. 'historial' son mensajes previos {role, content: str}."""
+              modelo: str | None = None, contexto: str = "", usar_cache: bool = False) -> dict:
+    """Ciclo de llamadas a herramientas con Gemini. 'historial' son mensajes previos {role, content: str}.
+    Si un modelo se queda sin cuota o está saturado, la pregunta se repite con el siguiente modelo Flash.
+    Con usar_cache=True, una pregunta idéntica hecha en las últimas 24 h se responde sin llamar a Gemini."""
+    if usar_cache:
+        clave = _clave_cache(historial, pregunta, contexto)
+        guardado = _leer_cache().get(clave)
+        if guardado and time.time() - guardado.get("t", 0) < CACHE_HORAS * 3600:
+            return guardado["out"]
+    out = con_respaldo(cliente, lambda m: {**_responder_con(cliente, historial, pregunta, series_dir, m, contexto), "modelo": m}, modelo)
+    if usar_cache and out.get("herramientas"):
+        cache = _leer_cache()
+        cache[clave] = {"t": time.time(), "out": out}
+        try:
+            CACHE_CHAT.write_text(json.dumps(cache, ensure_ascii=False, default=str), encoding="utf-8")
+        except OSError:
+            pass
+    return out
+
+
+def _responder_con(cliente, historial: list[dict], pregunta: str, series_dir: Path | None, modelo: str, contexto: str) -> dict:
     from google.genai import types
-    modelo = modelo or elegir_modelo(cliente)
     contenidos = _contenido(historial, pregunta)
     config = types.GenerateContentConfig(
         system_instruction=SISTEMA + (f"\n\nCONTEXTO DEL USUARIO (datos que él declaró):\n{contexto}" if contexto else ""), tools=_declaraciones(), max_output_tokens=1500,

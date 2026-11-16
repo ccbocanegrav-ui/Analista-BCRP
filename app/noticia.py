@@ -78,11 +78,11 @@ def analizar(cliente, texto: str, modelo: str | None = None) -> tuple[AnalisisNo
     if len(texto) < 80:
         raise ValueError("El texto es muy corto para explicarlo. Pega la noticia completa o un párrafo más largo.")
     recortado = len(texto) > LIMITE_CARACTERES
-    modelo = modelo or chat.elegir_modelo(cliente)
-    resp = cliente.models.generate_content(
-        model=modelo, contents=f"<<<TEXTO>>>\n{texto[:LIMITE_CARACTERES]}\n<<<FIN>>>",
-        config=types.GenerateContentConfig(system_instruction=SISTEMA, response_mime_type="application/json",
-                                           response_schema=AnalisisNoticia, max_output_tokens=2500))
+    config = types.GenerateContentConfig(system_instruction=SISTEMA, response_mime_type="application/json",
+                                         response_schema=AnalisisNoticia, max_output_tokens=2500,
+                                         http_options=types.HttpOptions(timeout=90_000))
+    resp = chat.con_respaldo(cliente, lambda m: cliente.models.generate_content(
+        model=m, contents=f"<<<TEXTO>>>\n{texto[:LIMITE_CARACTERES]}\n<<<FIN>>>", config=config), modelo)
     if not (resp.text or "").strip():
         raise ValueError("El modelo no devolvió una explicación")
     analisis = AnalisisNoticia.model_validate_json(resp.text)

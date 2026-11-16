@@ -454,7 +454,7 @@ with tabs[6]:
                     try:
                         from google import genai
                         previo = [{"role": m["role"], "content": m["content"]} for m in hist[-8:]]
-                        out = chat.responder(genai.Client(api_key=_clave), previo, pregunta, contexto=contexto_chat)
+                        out = chat.responder(genai.Client(api_key=_clave), previo, pregunta, contexto=contexto_chat, usar_cache=True)
                         hist += [{"role": "user", "content": pregunta},
                                  {"role": "assistant", "content": out["texto"], "seguimientos": out["seguimientos"],
                                   "trazas": out["trazas"], "advertencias": out["advertencias"]}]
