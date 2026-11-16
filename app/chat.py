@@ -196,15 +196,34 @@ def _es_recuperable(e: Exception) -> bool:
 def con_respaldo(cliente, funcion, modelo: str | None = None):
     """Ejecuta funcion(modelo) con el modelo indicado o, si no se indica, con cada candidato hasta que uno funcione."""
     modelos = [modelo] if modelo else modelos_candidatos(cliente)
-    ultimo = None
-    for m in modelos:
-        try:
-            return funcion(m)
-        except Exception as e:  # noqa: BLE001
-            if not _es_recuperable(e):
-                raise
-            ultimo = e
-    raise ultimo
+    fallos: dict[str, Exception] = {}
+    for vuelta in range(2):   # 2.ª vuelta: solo los saturados (5xx), que suelen recuperarse en segundos
+        pendientes = modelos if vuelta == 0 else [m for m, e in fallos.items() if getattr(e, "code", None) in (500, 503, 504)]
+        if vuelta and pendientes:
+            time.sleep(8)
+        for m in pendientes:
+            try:
+                return funcion(m)
+            except Exception as e:  # noqa: BLE001
+                if not _es_recuperable(e):
+                    raise
+                fallos[m] = e
+    raise SinModeloDisponible(fallos)
+
+
+class SinModeloDisponible(RuntimeError):
+    """Ningún modelo respondió. El mensaje explica en simple qué pasó con cada uno."""
+
+    def __init__(self, fallos: dict[str, Exception]):
+        self.fallos = fallos
+        grupos = {"sin cuota por hoy": [], "saturados por Google": [], "no disponibles": []}
+        for m, e in fallos.items():
+            codigo = getattr(e, "code", None)
+            grupo = "sin cuota por hoy" if codigo == 429 else "no disponibles" if codigo == 404 else "saturados por Google"
+            grupos[grupo].append(m)
+        detalle = "; ".join(f"{k}: {', '.join(v)}" for k, v in grupos.items() if v)
+        super().__init__(f"Ningún modelo de Gemini está disponible ahora ({detalle}). "
+                         "Si es cuota, se reinicia cada día; si es saturación, intenta de nuevo en unos minutos.")
 
 
 CACHE_CHAT = Path(__file__).resolve().parents[1] / "data" / "cache_chat.json"

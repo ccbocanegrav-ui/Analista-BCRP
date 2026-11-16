@@ -34,6 +34,20 @@ def test_con_respaldo_no_oculta_errores_que_no_son_de_cuota(monkeypatch):
         chat.con_respaldo(None, funcion)
 
 
+def test_sin_modelos_da_mensaje_claro(monkeypatch):
+    monkeypatch.setattr(chat, "modelos_candidatos", lambda c: ["a", "b"])
+
+    class Retirado(Exception):
+        code = 404
+
+    def funcion(m):
+        raise ErrorCuota("x") if m == "a" else Retirado("y")
+
+    with pytest.raises(chat.SinModeloDisponible) as e:
+        chat.con_respaldo(None, funcion)
+    assert "sin cuota por hoy: a" in str(e.value) and "no disponibles: b" in str(e.value)
+
+
 def test_cache_responde_sin_llamar_a_gemini(monkeypatch, tmp_path):
     monkeypatch.setattr(chat, "CACHE_CHAT", tmp_path / "cache.json")
     llamadas = []
