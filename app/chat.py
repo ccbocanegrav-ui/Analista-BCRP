@@ -150,7 +150,7 @@ def _decimales(s: str) -> int:
 
 def cifras_no_respaldadas(texto: str, resultados: list[str]) -> list[str]:
     """Números del texto que no aparecen (con redondeo razonable) en los resultados de las herramientas."""
-    base = [abs(_a_float(m)) for r in resultados for m in _NUM.findall(r.replace("-", ""))]
+    base = [abs(_a_float(m)) for r in resultados for m in _NUM.findall(r.replace("-", " "))]
     malos = []
     for m in _NUM.findall(texto):
         v = abs(_a_float(m))

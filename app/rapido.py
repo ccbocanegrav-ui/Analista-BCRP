@@ -40,7 +40,8 @@ PERFIL_CLAVES = [
     (("exporto", "exportador", "exporta"), EXPORTADOR),
     (("bodega", "restaurante", "pollo", "comida", "alimento", "tienda", "brasa"), ALIMENTOS),
 ]
-DOCUMENTOS = ("reporte", "documento", "bcrp dice", "segun el bcrp", "proyeccion", "proyecta", "espera", "por que", "causa")
+DOCUMENTOS = ("reporte", "documento", "bcrp dice", "segun", "proyeccion", "proyecta", "espera", "se espera", "expectativa",
+              "por que", "causa", "comunicado", "enfen", "programa monetario", "decidi", "decision", "pronostico", "alerta")
 NEGOCIO = ("expuest", "riesgo", "semaforo", "mi negocio", "tengo un", "tengo una", "que hago", "plan", "afecta")
 MAX_HERRAMIENTAS = 5
 

@@ -31,6 +31,12 @@ def test_palabras_cortas_no_coinciden_dentro_de_otras():
     assert "exposicion_regional" not in _nombres("Explícame qué pasa con los precios")
 
 
+def test_preguntas_sobre_documentos_buscan_en_ellos():
+    for q in ["¿Qué dice el comunicado del ENFEN?", "¿Qué decidió el BCRP sobre la tasa este mes?",
+              "¿Qué dice el programa monetario?", "Según el reporte de inflación, ¿qué pasa con El Niño?"]:
+        assert "buscar_documentos" in _nombres(q), q
+
+
 def test_margen_va_al_modo_completo():
     assert not rapido.sirve("Mi margen es 20%, ¿qué pasa si sube el dólar?")
     assert rapido.sirve("¿Cómo está el dólar?")
