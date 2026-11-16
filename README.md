@@ -2,7 +2,7 @@
 
 > **Hacemos que las PYMES peruanas entiendan en 1 minuto cómo el dólar, la inflación y El Niño afectan su negocio, mediante un analista con IA que solo responde con datos oficiales del BCRP y de NOAA, y que verifica cada cifra.**
 
-**Demo:** `[COMPLETAR: URL pública de Streamlit Cloud]` · o en local: ver [Cómo correrlo](#cómo-correrlo) · **Video de respaldo:** `[COMPLETAR: link]`
+**Demo:** https://2bcqbjxapphgmsq5tw6jj5s.streamlit.app/ · o en local: ver [Cómo correrlo](#cómo-correrlo) · **Video de respaldo:** `[COMPLETAR: link]`
 
 ---
 
