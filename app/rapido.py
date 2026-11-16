@@ -102,7 +102,9 @@ def responder(cliente, historial: list[dict], pregunta: str, series_dir: Path | 
         trazas.append({"herramienta": nombre, "args": args, "resultado": json.loads(txt)})
     datos = "\n".join(f"[{t['herramienta']}] {r}" for t, r in zip(trazas, resultados))
     sistema = SISTEMA_RAPIDO + (f"\n\nCONTEXTO DEL USUARIO (datos que él declaró):\n{contexto}" if contexto else "")
+    # Pensamiento "low": aquí Gemini solo redacta con datos ya calculados. Medido: ~11 s en vez de ~19 s y ~1,000 tokens menos.
     config = types.GenerateContentConfig(system_instruction=sistema, max_output_tokens=1500,
+                                         thinking_config=types.ThinkingConfig(thinking_level="low"),
                                          http_options=types.HttpOptions(timeout=45_000))
     contenidos = chat._contenido(historial, f"{pregunta}\n\nDATOS:\n{datos}")
 
