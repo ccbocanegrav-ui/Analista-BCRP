@@ -396,6 +396,8 @@ with tabs[6]:
     st.caption("Responde con las series oficiales de la app"
                + (f" y con {_nd} documento(s) oficial(es) indexado(s): " + ", ".join(_idx["documentos"]) if _nd else "")
                + ". Si no tiene el dato, te lo dice.")
+    modo_rapido = st.toggle("Modo rápido (1 llamada a Gemini por pregunta: más veloz y gasta menos cuota)", value=True,
+                            key="modo_rapido")
     with st.expander("Cuéntale de tu negocio (opcional) para que te responda a tu medida"):
         perfil_chat = st.selectbox("Tipo de negocio", ["Prefiero no decir"] + list(PERFILES), key="perfil_chat")
         zona_chat = st.text_input("¿En qué ciudad o región trabajas? (opcional)", key="zona_chat")
@@ -454,7 +456,8 @@ with tabs[6]:
                     try:
                         from google import genai
                         previo = [{"role": m["role"], "content": m["content"]} for m in hist[-8:]]
-                        out = chat.responder(genai.Client(api_key=_clave), previo, pregunta, contexto=contexto_chat, usar_cache=True)
+                        out = chat.responder(genai.Client(api_key=_clave), previo, pregunta, contexto=contexto_chat, usar_cache=True,
+                                           rapido=modo_rapido)
                         hist += [{"role": "user", "content": pregunta},
                                  {"role": "assistant", "content": out["texto"], "seguimientos": out["seguimientos"],
                                   "trazas": out["trazas"], "advertencias": out["advertencias"]}]

@@ -80,7 +80,7 @@ def analizar(cliente, texto: str, modelo: str | None = None) -> tuple[AnalisisNo
     recortado = len(texto) > LIMITE_CARACTERES
     config = types.GenerateContentConfig(system_instruction=SISTEMA, response_mime_type="application/json",
                                          response_schema=AnalisisNoticia, max_output_tokens=2500,
-                                         http_options=types.HttpOptions(timeout=90_000))
+                                         http_options=types.HttpOptions(timeout=45_000))
     resp = chat.con_respaldo(cliente, lambda m: cliente.models.generate_content(
         model=m, contents=f"<<<TEXTO>>>\n{texto[:LIMITE_CARACTERES]}\n<<<FIN>>>", config=config), modelo)
     if not (resp.text or "").strip():

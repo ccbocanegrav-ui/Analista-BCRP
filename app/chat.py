@@ -12,7 +12,9 @@ import time
 from pathlib import Path
 
 from app import docs, geo, indicators, narrativa, negocio, plan
-from app.data import analitica, buscar_fichas, catalogo, info
+import pandas as pd
+
+from app.data import analitica, buscar_fichas, catalogo, externa, info
 
 # Alias "latest" de Gemini Flash; si tu curso usa otro modelo, cámbialo con la variable GEMINI_MODEL.
 MODELO = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")   # solo se usa si no se puede consultar la lista de modelos
@@ -48,6 +50,8 @@ HERRAMIENTAS = [
          "margen_pct": {"type": "number"}, "ingreso_usd_pct": {"type": "number"}, "costo_usd_pct": {"type": "number"},
          "var_tc_pct": {"type": "number"}, "costo_insumos_pct": {"type": "number"}, "var_insumos_pct": {"type": "number"}},
          "required": ["margen_pct", "ingreso_usd_pct", "costo_usd_pct", "var_tc_pct"]}},
+    {"name": "anomalia_nino", "description": "Temperatura del mar frente a Perú (anomalía Niño 1+2 de NOAA, semanal): últimas semanas, máximo del último año y máximo histórico. Úsala para saber cómo está El Niño ahora.",
+     "input_schema": {"type": "object", "properties": {}}},
     {"name": "episodios_el_nino", "description": "Cuánto cayó la pesca de anchoveta (enero a agosto) frente al año anterior en 2017, 2023 y 2026, a nivel nacional.",
      "input_schema": {"type": "object", "properties": {}}},
     {"name": "plan_exposicion", "description": "Acciones sugeridas por horizonte y señales a vigilar para un tipo de negocio, según su semáforo.",
@@ -92,6 +96,19 @@ def ejecutar_herramienta(nombre: str, args: dict, series_dir: Path | None = None
             return {"margen_nuevo_pct": round(r["margen_nuevo"], 2), "cambio_en_puntos": round(r["cambio_pp"], 2),
                     "variacion_del_dolar_que_anula_el_margen_pct": None if eq is None else round(eq, 1),
                     "nota": "Ejercicio de sensibilidad, no una predicción."}
+        if nombre == "anomalia_nino":
+            d = externa("nino12_anomalia", series_dir)
+            if d is None or d.empty:
+                return {"error": "No se descargó la serie de NOAA. Ejecuta scripts/fetch_noaa.py"}
+            d = d.dropna().sort_values("fecha")
+            ultimo_anio = d[d.fecha > d.fecha.max() - pd.Timedelta(days=365)]
+            pico = d.loc[d.valor.idxmax()]
+            return {"unidad": "°C sobre lo normal", "fuente": "NOAA CPC, región Niño 1+2", "verificada": False,
+                    "ultimas_semanas": [{"semana": r.fecha.strftime("%Y-%m-%d"), "anomalia": round(float(r.valor), 1)}
+                                        for r in d.tail(4).itertuples()],
+                    "maximo_ultimo_anio": round(float(ultimo_anio.valor.max()), 1),
+                    "maximo_historico": {"semana": pico.fecha.strftime("%Y-%m-%d"), "anomalia": round(float(pico.valor), 1)},
+                    "nota": "Anomalía = cuánto más caliente está el mar que lo normal. Serie marcada como no verificada en el catálogo."}
         if nombre == "episodios_el_nino":
             filas = []
             for a, n in geo.EPISODIOS.items():
@@ -198,7 +215,7 @@ def con_respaldo(cliente, funcion, modelo: str | None = None):
     modelos = [modelo] if modelo else modelos_candidatos(cliente)
     fallos: dict[str, Exception] = {}
     for vuelta in range(2):   # 2.ª vuelta: solo los saturados (5xx), que suelen recuperarse en segundos
-        pendientes = modelos if vuelta == 0 else [m for m, e in fallos.items() if getattr(e, "code", None) in (500, 503, 504)]
+        pendientes = modelos if vuelta == 0 else [m for m, e in fallos.items() if getattr(e, "code", None) in (500, 503)]
         if vuelta and pendientes:
             time.sleep(8)
         for m in pendientes:
@@ -280,7 +297,7 @@ def _generar(cliente, modelo, contenidos, config, intentos: int = 2, espera: flo
 
 
 def responder(cliente, historial: list[dict], pregunta: str, series_dir: Path | None = None,
-              modelo: str | None = None, contexto: str = "", usar_cache: bool = False) -> dict:
+              modelo: str | None = None, contexto: str = "", usar_cache: bool = False, rapido: bool = False) -> dict:
     """Ciclo de llamadas a herramientas con Gemini. 'historial' son mensajes previos {role, content: str}.
     Si un modelo se queda sin cuota o está saturado, la pregunta se repite con el siguiente modelo Flash.
     Con usar_cache=True, una pregunta idéntica hecha en las últimas 24 h se responde sin llamar a Gemini."""
@@ -289,7 +306,11 @@ def responder(cliente, historial: list[dict], pregunta: str, series_dir: Path | 
         guardado = _leer_cache().get(clave)
         if guardado and time.time() - guardado.get("t", 0) < CACHE_HORAS * 3600:
             return guardado["out"]
-    out = con_respaldo(cliente, lambda m: {**_responder_con(cliente, historial, pregunta, series_dir, m, contexto), "modelo": m}, modelo)
+    from app import rapido as modo_rapido
+    if rapido and modo_rapido.sirve(pregunta, contexto):   # 1 llamada por pregunta (ver app/rapido.py)
+        out = modo_rapido.responder(cliente, historial, pregunta, series_dir, modelo, contexto)
+    else:
+        out = con_respaldo(cliente, lambda m: {**_responder_con(cliente, historial, pregunta, series_dir, m, contexto), "modelo": m}, modelo)
     if usar_cache and out.get("herramientas"):
         cache = _leer_cache()
         cache[clave] = {"t": time.time(), "out": out}
@@ -306,7 +327,7 @@ def _responder_con(cliente, historial: list[dict], pregunta: str, series_dir: Pa
     config = types.GenerateContentConfig(
         system_instruction=SISTEMA + (f"\n\nCONTEXTO DEL USUARIO (datos que él declaró):\n{contexto}" if contexto else ""), tools=_declaraciones(), max_output_tokens=1500,
         automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
-        http_options=types.HttpOptions(timeout=90_000))   # 90 s por llamada: si Gemini se cuelga, da error en vez de esperar para siempre
+        http_options=types.HttpOptions(timeout=45_000))   # 45 s por llamada: si Gemini se cuelga, da error en vez de esperar para siempre
     resultados: list[str] = []
     usadas: list[str] = []
     trazas: list[dict] = []
