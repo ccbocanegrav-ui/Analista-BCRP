@@ -12,9 +12,9 @@ Hacemos **un analista económico de bolsillo** para **dueños de PYMES expuestas
 
 ## 2. Founder
 
-**Carla Bocanegra**, estudiante de pregrado de la Universidad del Pacífico (Data Science con Python, 2026-II).
+**Carla Bocanegra**, estudiante de Economía en la Universidad del Pacífico e hija de dos padres emprendedores.
 
-`[COMPLETAR en 2-3 frases: tu carrera y por qué eres la persona indicada. Por ejemplo: qué te conecta con las PYMES, con el BCRP o con El Niño (familia con negocio, prácticas, un curso, tu región).]`
+En el mundo corporativo, donde trabajo, las decisiones se toman con analistas que explican qué significan el dólar, la inflación o las tasas. Mis padres, como la mayoría de emprendedores, no tienen ese analista, y les cuesta entender cómo las variables económicas y fenómenos como El Niño afectan su negocio. Este proyecto busca darles esa explicación completa y sencilla, y la intuición que necesitan, para que tomen decisiones informadas.
 
 ## 3. Problema
 
@@ -146,15 +146,27 @@ Más detalle en [docs/herramientas-curso.md](docs/herramientas-curso.md).
 
 ## 9. Qué hizo el agente
 
-Usé Claude como agente de programación y revisé cada parte:
+Usé Claude como agente de programación. El agente escribió el código; yo puse el problema, los datos, las decisiones de producto y la revisión.
 
-- **Fases 1-3:** el catálogo de series y la descarga desde BCRPData y NOAA; las transformaciones y resúmenes en lenguaje simple; el semáforo, el plan, el mapa y el simulador; el chat con herramientas, el verificador de cifras, el explicador de noticias, el RAG de documentos y la evaluación. `[COMPLETAR/CONFIRMAR: qué partes generó el agente y cuáles decidiste o cambiaste tú.]`
+**Lo que hice yo:**
+- Elegí el problema y el usuario: PYMES expuestas al dólar, los precios y El Niño.
+- Elegí las series del catálogo y verifiqué sus códigos en BCRPData.
+- Busqué y elegí los documentos oficiales que lee el chat: el Reporte de Inflación, la nota del Programa Monetario y el comunicado ENFEN.
+- Definí el modelo de negocio: cliente PYME, freemium y S/ 19 al mes.
+- Probé la app y reporté errores: la lentitud del chat, la cuota agotada de Gemini y las respuestas que mezclaban datos de pesca con un negocio agrícola.
+- Tomé decisiones de producto. Por ejemplo, dejé fuera la Encuesta de Expectativas del BCRP para que el chat no se lea como una recomendación de inversión.
+- Revisé y entendí las partes principales del código: el verificador de cifras, el chat y el modo rápido.
+
+**Lo que generó el agente:**
+- **Fases 1-3:** propuso y programó las funciones de la app. Esto incluye la descarga de BCRPData y NOAA, los resúmenes en lenguaje simple, el semáforo, el plan, el mapa, el simulador, el chat con herramientas, el verificador de cifras, el explicador de noticias, el RAG de documentos, la voz y la evaluación.
 - **Con Claude Code (16 nov.):**
   - Completó los archivos que faltaban de la fase 3.
   - Diagnosticó los errores de cuota (429) y de saturación (503) de Gemini.
-  - Agregó el respaldo automático entre modelos, la caché de 24 h y el **modo rápido** de 1 llamada (`app/rapido.py`).
+  - Agregó el respaldo automático entre modelos, la caché de 24 h y el **modo rápido** de 1 llamada (`app/rapido.py`), que usa Gemini Flash-Lite y responde en unos 5 s.
   - Agregó la herramienta de temperatura del mar (`anomalia_nino`), que el chat no podía leer.
-  - Escribió los tests de estas partes (`tests/test_respaldo.py`, `tests/test_rapido.py`) y este README.
+  - Corrigió una falsa alarma del verificador con números unidos por guion (como “20-2026”).
+  - Escribió los tests de estas partes (`tests/test_respaldo.py`, `tests/test_rapido.py`).
+  - Redactó este README a partir de mis respuestas y de los datos de la app.
 - **Skill propia:** `.claude/skills/actualizando-series/` le enseña al agente a refrescar las series y validarlas antes del commit.
 
 ---
