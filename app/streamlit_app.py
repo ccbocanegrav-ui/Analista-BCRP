@@ -11,7 +11,7 @@ from dotenv import load_dotenv  # noqa: E402
 import plotly.graph_objects as go  # noqa: E402
 import streamlit as st  # noqa: E402
 
-from app import chat, estructurado, geo, negocio, narrativa, nino, periodista, plan, voz  # noqa: E402
+from app import chat, docs, geo, negocio, narrativa, nino, noticia, plan, voz  # noqa: E402
 from app.data import SERIES_DIR, analitica, catalogo, ficha, info  # noqa: E402
 from app.indicators import PERFILES, evaluar  # noqa: E402
 
@@ -85,14 +85,14 @@ st.caption("Explicamos la economía peruana con datos oficiales del BCRP, en pal
 with st.sidebar:
     st.header("Cómo usar esta app")
     st.markdown("- **Resumen**: cómo está la economía hoy.\n- **Series**: cada indicador explicado.\n- **El Niño**: qué es y cómo pega a la pesca y los precios.\n"
-                "- **Mapa y sensibilidad**: qué regiones dependen más de la pesca.\n- **Mi negocio**: semáforo, simulador y plan.\n- **Periodista** y **Chat**.")
+                "- **Mapa y sensibilidad**: qué regiones dependen más de la pesca.\n- **Mi negocio**: semáforo, simulador y plan.\n- **Explícame una noticia**: pega algo que no entendiste.\n- **Chat**: pregúntale al analista.")
     st.info("Los números los calcula el código con datos del BCRP. Los textos explican, no pronostican. "
             "Lo que ves aquí no es asesoría financiera.")
     archivos = list(SERIES_DIR.glob("*.csv")) if SERIES_DIR.exists() else []
     if archivos:
         st.caption("Datos descargados el " + datetime.fromtimestamp(max(a.stat().st_mtime for a in archivos)).strftime("%d/%m/%Y"))
 
-tabs = st.tabs(["Resumen", "Series", "El Niño", "Mapa y sensibilidad", "Mi negocio", "Periodista", "Chat"])
+tabs = st.tabs(["Resumen", "Series", "El Niño", "Mapa y sensibilidad", "Mi negocio", "Explícame una noticia", "Chat"])
 
 # ---------- Resumen ----------
 with tabs[0]:
@@ -327,62 +327,125 @@ with tabs[4]:
                      f"su pesca cayó en promedio {abs(f['caida_promedio_episodios']):.0f}% frente al año anterior. "
                      "Si tu negocio depende de la pesca o de quienes viven de ella, tu zona está más expuesta.")
 
-# ---------- Periodista ----------
+# ---------- Explícame una noticia ----------
 with tabs[5]:
-    st.subheader("Modo periodista")
-    st.write("Una nota lista con cifras oficiales. Puedes editarla y el verificador te avisa si alguna cifra no sale de los datos.")
-    hs = periodista.hechos()
-    base = periodista.nota_plantilla(hs)
-    texto = st.text_area("Nota (puedes editarla)", base, height=200)
-    if st.button("Verificar cifras"):
-        malos = periodista.verificar_numeros(texto, hs)
-        if malos:
-            st.error(f"Cifras que no provienen de los datos: {', '.join(malos)}")
-        else:
-            st.success("Todas las cifras coinciden con los datos del BCRP.")
-    boton_audio(texto, "periodista")
-    st.markdown("#### Redactar con IA (salida estructurada)")
-    st.caption("El modelo recibe solo los hechos calculados y debe devolver un formato fijo (titular, bajada, puntos con su cifra y serie). "
-               "Si una cifra no sale de los datos, se marca.")
-    if st.button("Redactar con IA") and hs:
+    st.subheader("¿Leíste algo que no entendiste? Pégalo aquí")
+    st.write("Pega una noticia, un comunicado o un párrafo de un informe (o sube un archivo). Te lo explico en palabras simples, te aclaro los términos "
+             "técnicos y te muestro qué dicen hoy los datos oficiales del BCRP sobre ese tema.")
+    texto_noticia = st.text_area("Texto", height=220, placeholder="Pega aquí la noticia o el párrafo…")
+    archivo = st.file_uploader("…o sube un archivo", type=["pdf", "txt", "md"])
+    if st.button("Explicar", type="primary"):
+        if archivo is not None:
+            texto_noticia = noticia.leer_archivo(archivo.name, archivo.getvalue())
         if not clave_api():
             st.info("Necesitas la API key de Gemini para usar esta función.")
         else:
             try:
                 from google import genai
-                nota, malos = estructurado.generar(genai.Client(api_key=clave_api()), hs)
-                st.markdown(f"**{nota.titular}**")
-                st.write(nota.bajada)
-                for pto in nota.puntos:
-                    st.markdown(f"- {pto.texto} _(serie {pto.serie})_")
-                st.caption(f"Fuente: {nota.fuente}")
-                if malos:
-                    st.warning("Cifras que no salen de los datos: " + ", ".join(malos))
-                else:
-                    st.success("Estructura válida y todas las cifras verificadas.")
-                with st.expander("Ver el JSON estructurado"):
-                    st.json(nota.model_dump())
+                with st.spinner("Leyendo y explicando…"):
+                    an, malos, recortado = noticia.analizar(genai.Client(api_key=clave_api()), texto_noticia)
+                    st.session_state.noticia = dict(an=an, malos=malos, recortado=recortado,
+                                                    datos=noticia.datos_relacionados(an.temas))
+            except ValueError as e:
+                st.warning(str(e))
             except Exception as e:  # noqa: BLE001
-                st.error(f"No se pudo generar la nota: {e}")
+                st.error(f"No se pudo explicar el texto: {e}")
+    res_n = st.session_state.get("noticia")
+    if res_n:
+        an = res_n["an"]
+        if res_n["recortado"]:
+            st.caption(f"El texto era largo: se analizaron solo los primeros {noticia.LIMITE_CARACTERES:,} caracteres.")
+        st.markdown("### En pocas palabras")
+        st.write(an.resumen_simple)
+        boton_audio(an.resumen_simple, "noticia")
+        if an.terminos:
+            st.markdown("### Palabras que quizá no conoces")
+            for t in an.terminos:
+                st.markdown(f"**{t.termino}.** {t.explicacion}")
+            for f in noticia.fichas_para([t.termino for t in an.terminos]):
+                with st.expander(f"Ficha de la app relacionada con «{f['termino']}»"):
+                    st.markdown(f["texto"].replace("> BORRADOR: revisa y ajusta con tu criterio antes de presentar.", ""))
+        if an.cifras:
+            st.markdown("### Las cifras de la noticia, explicadas")
+            for c in an.cifras:
+                st.markdown(f"- **{c.cifra}**: {c.significado}")
+        if an.por_que_podria_importar:
+            st.markdown("### Por qué podría importarle a tu negocio")
+            st.write(an.por_que_podria_importar)
+        if res_n["datos"]:
+            st.markdown("### Qué dicen hoy los datos oficiales")
+            st.caption("Estas cifras las calcula la app con datos del BCRP; no vienen de la noticia.")
+            for d in res_n["datos"]:
+                with st.expander(f"{d['nombre']} (serie {d['codigo']})", expanded=True):
+                    st.write(" ".join(d["frases"]))
+        if an.lo_que_no_dice:
+            st.markdown("### Lo que el texto no aclara")
+            for x in an.lo_que_no_dice:
+                st.markdown(f"- {x}")
+        if res_n["malos"]:
+            st.warning("Estas cifras de la explicación no aparecen en el texto original; tómalas con cuidado: " + ", ".join(res_n["malos"]))
+        else:
+            st.success("Todas las cifras de la explicación salen del texto que pegaste.")
+        st.caption("La explicación es generada por IA a partir de tu texto. No es asesoría financiera ni verifica si la noticia es cierta.")
 
 # ---------- Chat ----------
 with tabs[6]:
     st.subheader("Pregúntale al analista")
-    st.caption("Responde solo con las series de la app. Si no tiene el dato, te lo dice.")
+    _idx = docs.cargar()
+    _nd = len(_idx["documentos"])
+    st.caption("Responde con las series oficiales de la app"
+               + (f" y con {_nd} documento(s) oficial(es) indexado(s): " + ", ".join(_idx["documentos"]) if _nd else "")
+               + ". Si no tiene el dato, te lo dice.")
+    with st.expander("Cuéntale de tu negocio (opcional) para que te responda a tu medida"):
+        perfil_chat = st.selectbox("Tipo de negocio", ["Prefiero no decir"] + list(PERFILES), key="perfil_chat")
+        zona_chat = st.text_input("¿En qué ciudad o región trabajas? (opcional)", key="zona_chat")
+        simular = st.checkbox("Quiero que pueda simular mi margen", key="simular_chat")
+        if simular:
+            cc1, cc2 = st.columns(2)
+            m_c = cc1.number_input("Margen actual (%)", 0.0, 90.0, 15.0, 1.0, key="m_c")
+            iu_c = cc1.slider("Ventas en dólares (%)", 0, 100, 0, key="iu_c")
+            cu_c = cc2.slider("Costos en dólares (%)", 0, 100, 30, key="cu_c")
+            ci_c = cc2.slider("Costos en insumos locales (%)", 0, 100 - cu_c, min(40, 100 - cu_c), key="ci_c")
+    partes_ctx = []
+    if perfil_chat != "Prefiero no decir":
+        partes_ctx.append(f"Tipo de negocio: {perfil_chat}")
+    if zona_chat.strip():
+        partes_ctx.append(f"Zona: {zona_chat.strip()}")
+    if simular:
+        partes_ctx.append(f"Margen actual {m_c:.0f}%; ventas en dólares {iu_c}%; costos en dólares {cu_c}%; costos en insumos locales {ci_c}%")
+    contexto_chat = "\n".join(partes_ctx)
+
     _clave = clave_api()
     if not _clave:
         st.info("El chat necesita una API key de Gemini (variable `GEMINI_API_KEY` en `.env` o en los secretos de Streamlit).")
     else:
         if "chat" not in st.session_state:
             st.session_state.chat = []
-        for msg in st.session_state.chat:
+        hist = st.session_state.chat
+        for k, msg in enumerate(hist):
             with st.chat_message(msg["role"]):
                 st.write(msg["content"])
-        ejemplos = ["¿Cómo está el dólar y qué significa para mi negocio?", "¿Qué es El Niño y cómo afecta los precios?",
-                    "¿Qué región depende más de la anchoveta?"]
-        if not st.session_state.chat:
-            st.caption("Prueba con: " + " · ".join(f"«{e}»" for e in ejemplos))
-        pregunta = st.chat_input("Escribe tu pregunta")
+                if msg["role"] == "assistant":
+                    if msg.get("advertencias"):
+                        st.warning("Cifras que no pude verificar en los datos consultados: " + ", ".join(msg["advertencias"]))
+                    if msg.get("trazas"):
+                        with st.expander("Datos que consulté"):
+                            for tr in msg["trazas"]:
+                                st.caption(f"{tr['herramienta']} {tr['args'] or ''}")
+                                obs = tr["resultado"].get("observaciones") if isinstance(tr["resultado"], dict) else None
+                                if obs:
+                                    st.line_chart(pd.DataFrame(obs).set_index("fecha")["valor"], height=160)
+                                else:
+                                    st.json(tr["resultado"], expanded=False)
+                    if k == len(hist) - 1 and msg.get("seguimientos"):
+                        for j, q in enumerate(msg["seguimientos"]):
+                            if st.button(q, key=f"seg_{k}_{j}"):
+                                st.session_state.pendiente = q
+                                st.rerun()
+        if not hist:
+            st.caption("Prueba con: «¿Cómo está el dólar y qué significa para mi negocio?» · «¿Qué es El Niño y cómo afecta los precios?» · "
+                       "«¿Qué región depende más de la anchoveta?»")
+        pregunta = st.session_state.pop("pendiente", None) or st.chat_input("Escribe tu pregunta")
         if pregunta:
             with st.chat_message("user"):
                 st.write(pregunta)
@@ -390,15 +453,19 @@ with tabs[6]:
                 with st.spinner("Consultando los datos…"):
                     try:
                         from google import genai
-                        out = chat.responder(genai.Client(api_key=_clave), st.session_state.chat[-8:], pregunta)
-                        st.write(out["texto"])
-                        if out["advertencias"]:
-                            st.warning("Cifras que no pude verificar en los datos consultados: " + ", ".join(out["advertencias"]))
-                        if out["herramientas"]:
-                            st.caption("Consultó: " + ", ".join(sorted(set(out["herramientas"]))))
-                        st.session_state.chat += [{"role": "user", "content": pregunta}, {"role": "assistant", "content": out["texto"]}]
+                        previo = [{"role": m["role"], "content": m["content"]} for m in hist[-8:]]
+                        out = chat.responder(genai.Client(api_key=_clave), previo, pregunta, contexto=contexto_chat)
+                        hist += [{"role": "user", "content": pregunta},
+                                 {"role": "assistant", "content": out["texto"], "seguimientos": out["seguimientos"],
+                                  "trazas": out["trazas"], "advertencias": out["advertencias"]}]
+                        st.rerun()
                     except Exception as e:  # noqa: BLE001
+                        if type(e).__name__ == "RerunException":
+                            raise
                         st.error(f"No se pudo responder: {e}")
+        if hist and st.button("Borrar conversación"):
+            st.session_state.chat = []
+            st.rerun()
 
     with st.expander("Cómo medimos la calidad del chat (evaluación)"):
         ruta_eval = Path(__file__).resolve().parents[1] / "docs" / "evaluacion.md"

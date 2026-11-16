@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pandas as pd
@@ -289,3 +290,170 @@ def test_declaraciones_de_herramientas_son_validas():
 def test_esquema_de_nota_es_compatible_con_gemini():
     esq = estructurado.NotaPeriodistica.model_json_schema()
     assert "maxLength" not in json.dumps(esq) and "minItems" not in json.dumps(esq)
+
+
+# ---------- documentos (RAG) y elección de modelo ----------
+from app import docs  # noqa: E402
+
+TEXTO_DOC = ("El Banco Central redujo su proyección de crecimiento para 2026 por el impacto de El Niño extraordinario sobre la pesca y la agricultura. "
+             "La inflación podría ubicarse por encima del rango meta hacia fin de año debido a mayores precios de alimentos. ") * 8 + \
+            ("La tasa de referencia se mantiene sin cambios mientras se evalúa la evolución de las expectativas. ") * 8
+
+
+def test_partir_respeta_tamano_y_solape():
+    frs = docs.partir(TEXTO_DOC, tam=300, solape=50)
+    assert len(frs) > 3 and all(len(f) <= 305 for f in frs)
+
+
+def test_indexar_y_buscar_con_cita(tmp_path):
+    (tmp_path / "reporte_demo.txt").write_text(TEXTO_DOC, encoding="utf-8")
+    (tmp_path / "otro.md").write_text("Las exportaciones de harina de pescado dependen de la temporada de anchoveta. " * 10, encoding="utf-8")
+    idx = docs.indexar(tmp_path)
+    assert set(idx["documentos"]) == {"reporte_demo", "otro"}
+    r = docs.buscar("proyección de crecimiento por El Niño", indice=idx)
+    assert r and r[0]["fuente"].startswith("reporte_demo, p. ")
+    assert docs.buscar("zzzz inexistente", indice=idx) == []
+
+
+def test_indexar_pdf_con_paginas(tmp_path):
+    canvas = pytest.importorskip("reportlab.pdfgen.canvas")
+    c = canvas.Canvas(str(tmp_path / "informe.pdf"))
+    c.drawString(72, 750, "Pagina uno: el crecimiento de la pesca cayo por El Nino y la anchoveta escaseo en la costa norte del pais durante el primer semestre del ano.")
+    c.showPage()
+    c.drawString(72, 750, "Pagina dos: la inflacion de alimentos subio por menor oferta agricola luego de las lluvias intensas en la costa norte del Peru este ano.")
+    c.save()
+    idx = docs.indexar(tmp_path)
+    r = docs.buscar("inflacion alimentos lluvias", indice=idx)
+    assert r and r[0]["fuente"] == "informe, p. 2"
+
+
+def test_herramienta_buscar_documentos_y_verificador(tmp_path, monkeypatch):
+    (tmp_path / "rep.txt").write_text("El Banco Central proyecta un crecimiento de 3.2% para 2026 por El Niño. " * 8, encoding="utf-8")
+    idx = docs.indexar(tmp_path)
+    monkeypatch.setattr(docs, "cargar", lambda ruta=docs.INDICE: idx)
+    out = chat.ejecutar_herramienta("buscar_documentos", {"consulta": "crecimiento 2026 El Niño"})
+    assert out["fragmentos"]
+    resultados = [json.dumps(out, ensure_ascii=False)]
+    assert chat.cifras_no_respaldadas("El documento proyecta 3.2%.", resultados) == []
+    assert chat.cifras_no_respaldadas("El documento proyecta 7.5%.", resultados) == ["7.5"]
+
+
+def test_buscar_documentos_sin_indice_no_rompe(monkeypatch):
+    monkeypatch.setattr(docs, "cargar", lambda ruta=docs.INDICE: {"fragmentos": [], "documentos": {}})
+    assert "nota" in chat.ejecutar_herramienta("buscar_documentos", {"consulta": "algo"})
+
+
+class ClienteConLista:
+    def __init__(self, nombres):
+        self.models = self
+        self._n = nombres
+
+    def list(self):
+        return [SimpleNamespace(name=f"models/{n}", supported_actions=["generateContent"]) for n in self._n]
+
+
+def test_elegir_modelo_toma_el_flash_estable_mas_nuevo(monkeypatch):
+    monkeypatch.delenv("GEMINI_MODEL", raising=False)
+    c = ClienteConLista(["gemini-2.5-flash", "gemini-3.1-flash", "gemini-3.5-flash-preview", "gemini-3.1-flash-lite",
+                         "gemini-flash-latest", "gemini-3.1-flash-image", "gemini-2.5-pro"])
+    assert chat.elegir_modelo(c) == "gemini-3.1-flash"
+
+
+def test_elegir_modelo_respeta_variable_y_cae_a_defecto(monkeypatch):
+    monkeypatch.setenv("GEMINI_MODEL", "mi-modelo")
+    assert chat.elegir_modelo(ClienteConLista([])) == "mi-modelo"
+    monkeypatch.delenv("GEMINI_MODEL")
+    assert chat.elegir_modelo(SimpleNamespace(models=SimpleNamespace())) == chat.MODELO
+
+
+# ---------- chat potenciado y noticias ----------
+from app import noticia  # noqa: E402
+
+
+def test_herramientas_nuevas_simular_episodios_plan(datos):
+    r = chat.ejecutar_herramienta("simular_margen", {"margen_pct": 20, "ingreso_usd_pct": 0, "costo_usd_pct": 50, "var_tc_pct": 10}, datos)
+    assert r["margen_nuevo_pct"] == pytest.approx(16.0)
+    e = chat.ejecutar_herramienta("episodios_el_nino", {}, datos)
+    assert any(f["variacion_pesca_ene_ago_pct"] < -40 for f in e["episodios"] if f["variacion_pesca_ene_ago_pct"] is not None)
+    p = chat.ejecutar_herramienta("plan_exposicion", {"perfil": "Pesca y harina de pescado"}, datos)
+    assert p["semaforo_general"] in {"rojo", "amarillo", "verde"} and "aviso" in p
+    assert "error" in chat.ejecutar_herramienta("simular_margen", {"margen_pct": 20}, datos)
+
+
+def test_separar_seguimientos():
+    t = "El dólar subió.\n\nFuente: BCRP.\n\nPodrías preguntar:\n- ¿Qué pasa con mis costos?\n- ¿Y la inflación?\n"
+    cuerpo, seg = chat.separar_seguimientos(t)
+    assert cuerpo.endswith("Fuente: BCRP.") and seg == ["¿Qué pasa con mis costos?", "¿Y la inflación?"]
+    assert chat.separar_seguimientos("Solo texto.") == ("Solo texto.", [])
+
+
+def test_chat_devuelve_trazas_y_seguimientos(datos):
+    ult = chat.ejecutar_herramienta("datos_serie", {"id": "ipc_lima", "ultimos": 1}, datos)["observaciones"][0]["valor"]
+    out = chat.responder(FalsoCliente(f"El índice está en {ult:.1f}.\n\nPodrías preguntar:\n- ¿Y el dólar?\n- ¿Y el empleo?"),
+                         [], "¿precios?", datos, contexto="Tipo de negocio: Importador")
+    assert out["trazas"][0]["herramienta"] == "datos_serie" and out["seguimientos"] == ["¿Y el dólar?", "¿Y el empleo?"]
+    assert out["advertencias"] == []
+
+
+def test_cifras_del_usuario_no_se_marcan(datos):
+    out = chat.responder(FalsoCliente("Con tu margen de 17.5% el dólar importa."), [], "Mi margen es 17.5%, ¿qué pasa con el dólar?", datos)
+    assert out["advertencias"] == []
+
+
+TEXTO_NOTICIA = ("El BCRP mantuvo su tasa de referencia en 4.25% en su reunión de octubre. La entidad señaló que la inflación a 12 meses "
+                 "se ubicaría temporalmente por encima del rango meta por el impacto de El Niño en los precios de los alimentos. "
+                 "Analistas esperan que la pesca de anchoveta caiga 30% este año. ")
+
+
+class ClienteNoticia:
+    def __init__(self, datos_json):
+        self.models = self
+        self.datos = datos_json
+
+    def generate_content(self, model, contents, config):
+        assert "<<<TEXTO>>>" in contents and config.response_mime_type == "application/json"
+        return SimpleNamespace(text=json.dumps(self.datos, ensure_ascii=False))
+
+
+ANALISIS_OK = {"resumen_simple": "El Banco Central dejó su tasa en 4.25%. Dice que los precios subirían por El Niño.",
+               "terminos": [{"termino": "tasa de referencia", "explicacion": "Es el precio base del dinero que fija el Banco Central."}],
+               "cifras": [{"cifra": "30%", "significado": "Los analistas esperan que se pesque 30% menos anchoveta."}],
+               "temas": ["tasa_de_interes", "inflacion", "tema_inventado"],
+               "por_que_podria_importar": "Si los precios de los alimentos suben, tus costos pueden subir.",
+               "lo_que_no_dice": ["No dice cuándo bajará la inflación."]}
+
+
+def test_noticia_analiza_y_filtra_temas(datos):
+    an, malos, recortado = noticia.analizar(ClienteNoticia(ANALISIS_OK), TEXTO_NOTICIA * 2)
+    assert malos == [] and not recortado
+    assert an.temas == ["tasa_de_interes", "inflacion"]
+    rel = noticia.datos_relacionados(an.temas, datos)
+    assert {r["id"] for r in rel} >= {"tasa_referencia", "ipc_lima"} and all(r["frases"] for r in rel)
+
+
+def test_noticia_marca_cifras_que_no_estan_en_el_texto():
+    mala = dict(ANALISIS_OK, resumen_simple="El Banco Central subió su tasa a 7.5%.")
+    _, malos, _ = noticia.analizar(ClienteNoticia(mala), TEXTO_NOTICIA * 2)
+    assert "7.5" in malos
+
+
+def test_noticia_rechaza_texto_corto_y_recorta_largo():
+    with pytest.raises(ValueError):
+        noticia.analizar(ClienteNoticia(ANALISIS_OK), "hola")
+    _, _, recortado = noticia.analizar(ClienteNoticia(ANALISIS_OK), TEXTO_NOTICIA * 100)
+    assert recortado
+
+
+def test_noticia_leer_archivo_txt():
+    assert noticia.leer_archivo("n.txt", "Tasa de 4.25% ñ".encode()) == "Tasa de 4.25% ñ"
+
+
+def test_app_renderiza_chat_y_noticias_con_clave(datos, monkeypatch):
+    from streamlit.testing.v1 import AppTest
+    import app.data as d
+    monkeypatch.setattr(d, "SERIES_DIR", datos)
+    monkeypatch.setenv("GEMINI_API_KEY", "clave-falsa")
+    at = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app" / "streamlit_app.py"), default_timeout=120).run()
+    assert not at.exception, [e.value for e in at.exception]
+    assert any("Explicar" == b.label for b in at.button)
+    assert any(x.label == "Tipo de negocio" for x in at.selectbox)
