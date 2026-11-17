@@ -62,6 +62,15 @@ Usa el mismo puntaje de preocupación, pero solo con los factores que importan a
 
 ## 6. Limitaciones conocidas
 
-- La serie de NOAA está marcada como **no verificada** en `data/catalog.json`, porque falta confirmar el archivo exacto. La app lo avisa al citarla.
-- La serie de precios de alimentos (PN01383PM) probablemente es una variación mensual, pero no está confirmada. Por eso la app la etiqueta como “variación %” sin precisar.
-- Los episodios de El Niño (2017, 2023, 2026) se tomaron según ENFEN y están pendientes de verificar.
+- **Pocas observaciones de El Niño:** el promedio de caída de la pesca se calcula con solo 2 episodios pasados (2017 y 2023), así que es una referencia y no un pronóstico.
+- **Pesos iguales en el termómetro:** no reflejan cuánto le pesa cada factor a cada negocio en particular (ver la sección 3).
+- **Una serie del catálogo sin confirmar:** el ingreso formal real (PN37697PM) todavía no está verificada contra su ficha. No entra en el termómetro, y la app lo avisa si se consulta.
+
+## 7. Cómo se comprobó cada fuente (16/11/2026)
+
+| Dato | Fuente oficial | Cómo se comprobó |
+|---|---|---|
+| Temperatura del mar, Niño 1+2 | NOAA CPC, archivo semanal [`wksst9120.for`](https://www.cpc.ncep.noaa.gov/data/indices/wksst9120.for) | Se descargó el archivo y se comparó con nuestra serie: la columna que usamos es la anomalía (SSTA) de Niño 1+2, y los valores coinciden semana a semana (por ejemplo, +5.6 el 4 nov. y +5.4 el 11 nov. de 2026). |
+| Episodios de El Niño (2017, 2023, 2026) | Comunicados del ENFEN (el de 2026 es el N° 20-2026, del 13 nov. 2026) | Son los eventos El Niño costero declarados por el ENFEN. En la serie de NOAA aparecen como picos: +2.3 °C en 2017, +3.5 °C en 2023 y +5.6 °C en 2026. |
+| Precios de alimentos (PN01383PM) | API de BCRPData | La API la titula “IPC Alimentos y Bebidas (variación porcentual)”. Es la variación **mensual**, porque los valores cambian de signo de un mes a otro (−0.70 en mayo y +2.20 en marzo de 2026), cosa que no pasa con una variación a 12 meses. |
+| Inflación, tipo de cambio, PBI, pesca, tasa de referencia | API de BCRPData | Cada código se abrió en BCRPData para confirmar el nombre y la unidad (`verificada: true` en `data/catalog.json`). |

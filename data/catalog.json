@@ -34,13 +34,13 @@
     {
       "id": "ipc_alimentos_var",
       "code": "PN01383PM",
-      "nombre": "IPC Alimentos y Bebidas, Lima Metropolitana (variación %)",
+      "nombre": "IPC Alimentos y Bebidas, Lima Metropolitana (variación % mensual)",
       "tema": "precios",
       "frecuencia": "mensual",
-      "unidad": "variación %",
+      "unidad": "variación % mensual",
       "transformacion": "var_pct_reportada",
       "verificada": true,
-      "nota": "Probablemente variación mensual (en oct-2026: 1.03% vs +0.57% del IPC general). Confirmar en la ficha de BCRPData antes de acumularla."
+      "nota": "Variación porcentual mensual (confirmado 16/11/2026: la API de BCRPData la titula variación porcentual y los valores alternan signo mes a mes, p. ej. -0.70 en may-2026 y +2.20 en mar-2026)."
     },
     {
       "id": "pbi_mensual_yoy",
@@ -58,10 +58,10 @@
       "nombre": "Tasa de referencia de la política monetaria del BCRP",
       "tema": "tasas",
       "frecuencia": "mensual",
-      "unidad": "% (por confirmar)",
+      "unidad": "%",
       "transformacion": "nivel",
       "verificada": true,
-      "nota": "La página no indica unidad explícita; se asume %."
+      "nota": "Tasa de Referencia de la Política Monetaria, en % anual (4.25 en ene-2026 según la API de BCRPData)."
     },
     {
       "id": "desempleo_lima",
@@ -240,8 +240,6 @@
     }
   ],
   "pendientes": [
-    "Código de PBI agropecuario total o agrícola (variación % interanual)",
-    "Confirmar si PN01383PM (IPC alimentos) es variación mensual o a 12 meses",
-    "Archivo exacto de NOAA para Niño 1+2 semanal"
+    "Código de PBI agropecuario total o agrícola (variación % interanual)"
   ]
 }

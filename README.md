@@ -36,7 +36,7 @@ Empezamos por **alimentos** por dos razones:
 | Dato oficial (descargado por la app) | Valor |
 |---|---|
 | Inflación en Lima a 12 meses (oct. 2026) | **5.3 %**, desde 1.4 % hace un año; más alta que el 86 % de los meses desde 2013 |
-| Temperatura del mar, región Niño 1+2 (NOAA CPC, semana del 4 nov. 2026) | **+5.6 °C sobre lo normal**, el valor más alto de la serie descargada, que empieza en 1981 (serie marcada como no verificada en el catálogo: falta confirmar el archivo exacto de NOAA). El comunicado oficial ENFEN N° 20-2026 (13 nov. 2026) mantiene la “Alerta de El Niño Costero”: “se mantendría con una magnitud extraordinaria hasta febrero de 2027” |
+| Temperatura del mar, región Niño 1+2 (NOAA CPC, archivo semanal oficial) | **+5.6 °C sobre lo normal** en la semana del 4 nov. 2026, el valor más alto desde que empieza la serie en 1981; +5.4 °C en la semana del 11 nov. El comunicado oficial ENFEN N° 20-2026 (13 nov. 2026) mantiene la “Alerta de El Niño Costero”: “se mantendría con una magnitud extraordinaria hasta febrero de 2027” |
 | Pesca de anchoveta, ene.–ago. 2026 vs. 2025 | **−73.1 %** (en El Niño 2023 fue −69.2 %) |
 | Dólar interbancario (nov. 2026) | S/ 3.43, +1.8 % en un año |
 

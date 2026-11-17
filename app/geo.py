@@ -21,7 +21,7 @@ REGIONES = {
 }
 TOTAL = "anchoveta_total"
 
-# Años con evento El Niño costero declarado (verificar fechas y magnitud en los comunicados del ENFEN).
+# Años con El Niño costero declarado por el ENFEN; en la serie de NOAA se ven como picos de anomalía (+2.3 °C en 2017, +3.5 °C en 2023, +5.6 °C en 2026).
 EPISODIOS = {2017: "El Niño costero 2017", 2023: "El Niño costero 2023", 2026: "El Niño 2026 (en curso)"}
 MES_INI, MES_FIN = 1, 8   # período comparable: 2026 solo tiene datos hasta agosto
 

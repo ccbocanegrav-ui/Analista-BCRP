@@ -104,12 +104,12 @@ def ejecutar_herramienta(nombre: str, args: dict, series_dir: Path | None = None
             d = d.dropna().sort_values("fecha")
             ultimo_anio = d[d.fecha > d.fecha.max() - pd.Timedelta(days=365)]
             pico = d.loc[d.valor.idxmax()]
-            return {"unidad": "°C sobre lo normal", "fuente": "NOAA CPC, región Niño 1+2", "verificada": False,
+            return {"unidad": "°C sobre lo normal", "fuente": "NOAA CPC, región Niño 1+2 (archivo oficial wksst9120.for)", "verificada": True,
                     "ultimas_semanas": [{"semana": r.fecha.strftime("%Y-%m-%d"), "anomalia": round(float(r.valor), 1)}
                                         for r in d.tail(4).itertuples()],
                     "maximo_ultimo_anio": round(float(ultimo_anio.valor.max()), 1),
                     "maximo_historico": {"semana": pico.fecha.strftime("%Y-%m-%d"), "anomalia": round(float(pico.valor), 1)},
-                    "nota": "Anomalía = cuánto más caliente está el mar que lo normal. Serie marcada como no verificada en el catálogo."}
+                    "nota": "Anomalía = cuánto más caliente está el mar que lo normal (columna SSTA de Niño 1+2 del archivo semanal del CPC)."}
         if nombre == "episodios_el_nino":
             filas = []
             for a, n in geo.EPISODIOS.items():

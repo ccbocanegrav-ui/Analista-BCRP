@@ -129,7 +129,7 @@ with tabs[0]:
     st.divider()
     st.markdown("#### El detalle, dato por dato")
     clave = [("tc_interbancario_venta", "Dólar (S/)"), ("ipc_lima", "Inflación 12 meses (%)"),
-             ("ipc_alimentos_var", "Precios de alimentos (variación %)"), ("pbi_mensual_yoy", "Crecimiento (%)"),
+             ("ipc_alimentos_var", "Precios de alimentos (variación mensual %)"), ("pbi_mensual_yoy", "Crecimiento (%)"),
              ("tasa_referencia", "Tasa del Banco Central (%)"), ("desempleo_lima", "Desempleo Lima (%)"),
              ("harina_precio", "Harina de pescado (US$/t)")]
     clave = [(s, n) for s, n in clave if hay(s)]
