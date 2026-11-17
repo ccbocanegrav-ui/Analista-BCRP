@@ -43,7 +43,19 @@ Para un restaurante con margen de 15 %, que suban los insumos o el dólar puede 
 **Cómo lo resuelve hoy.** Noticias sueltas, el grupo de WhatsApp del gremio o el contador una vez al mes. Los reportes del BCRP (por ejemplo, el Reporte de Inflación, de más de 100 páginas) son técnicos y BCRPData exige saber qué código de serie buscar.
 
 **Evidencia: 3 conversaciones con usuarios potenciales** → [docs/research/](docs/research/)
-`[COMPLETAR: en 2-3 líneas, lo más importante que te dijeron los 3 usuarios.]`
+| Usuario | Lo más importante que dijo |
+|---|---|
+| [Repostera](docs/research/entrevista-1.md) (alimentos) | Perdió plata cuando la mantequilla y el huevo “subieron un montón en dos semanas”, después de haber cotizado tortas. No entiende “tasa de referencia” ni “percentil”. Pagaría **S/ 10 al mes** si hay alertas: “con un solo pedido ya lo recupero”. |
+| [Productor de arándanos y caña](docs/research/entrevista-2.md) (agro) | El Niño de 2017 le malogró una campaña y teme este año. Quiere “las noticias bien explicadas” y tendencias, aunque ya se autoeduca contrastando fuentes. |
+| [Importador de grupos electrógenos](docs/research/entrevista-3.md) (comercio) | Cotiza a solo 7 días por la volatilidad del dólar. Usa la IA, pero “siempre tengo que recalcarle que sus fuentes sean confiables y que verifique”. No tiene tiempo para reportes. |
+
+**Qué cambiamos por estas conversaciones:**
+- El precio bajó de S/ 19 a **S/ 9.90**.
+- “Percentil” pasó a ser “más alto que en 86 de cada 100 meses”.
+- Los **precios de alimentos** ahora aparecen en el Resumen.
+- Agregamos un **termómetro general** con color, para entenderlo de un vistazo.
+- El explicador ahora acepta **texto, link o foto**.
+- Simplificamos el lenguaje del chat.
 
 ## 4. Solución e insight
 
@@ -53,7 +65,8 @@ Una app web con 7 pestañas y, en el centro, un **chat analista**:
 - **Semáforo y plan por tipo de negocio:** importador, alimentos, exportador y pesca.
 - **El Niño:** temperatura del mar, episodios pasados y su efecto en la pesca, con un mapa por región.
 - **Mi negocio:** un simulador de cuánto cambia tu margen si el dólar o los insumos suben.
-- **Explícame una noticia:** pegas una noticia económica y te la explica en simple, marcando las cifras que no vienen del texto.
+- **Termómetro general:** un solo número de 0 a 100 con color (verde, amarillo o rojo) que resume precios, dólar, crecimiento, pesca y El Niño. Cada factor se compara con su propia historia. Debajo está el detalle dato por dato.
+- **Explícame una noticia:** pegas el **texto**, el **link** o una **foto** de una noticia y te la explica como a alguien que no sabe nada de economía, marcando las cifras que no vienen de la noticia.
 - **Escuchar:** la explicación en audio.
 
 **Insight:** el problema de la IA en economía es que **inventa cifras**. Por eso aquí **la IA nunca calcula**: los números los calcula el código con las series oficiales y la IA solo redacta. Después, un **verificador** revisa que cada número de la respuesta exista en los datos consultados y avisa si no. En nuestra evaluación detectó el 100 % de las cifras inventadas, con 0 falsas alarmas ([docs/evaluacion.md](docs/evaluacion.md)).

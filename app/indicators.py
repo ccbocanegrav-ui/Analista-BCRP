@@ -15,9 +15,9 @@ from app.data import analitica, cargar
 UMBRAL_ROJO = 80
 UMBRAL_AMARILLO = 60
 
-ADVERTENCIA = ("Criterio de Termómetro basado en la historia de cada serie. "
+ADVERTENCIA = ("Criterio de Termómetro basado en la historia de cada dato. "
                "No es un pronóstico ni una recomendación de inversión o de negocio. "
-               "Que dos variables se muevan juntas no prueba que una cause la otra.")
+               "Que dos cosas pasen a la vez no significa que una cause la otra.")
 
 
 @dataclass
@@ -88,6 +88,41 @@ def evaluar_indicador(clave: str, sentido: str, series_dir: Path | None = None) 
         u_am, u_ro = float(serie.quantile(1 - UMBRAL_AMARILLO / 100)), float(serie.quantile(1 - UMBRAL_ROJO / 100))
     return Indicador(clave, spec["nombre"], ultimo["valor"], spec["unidad"], ultimo["fecha"], color, razon,
                      sentido, u_am, u_ro)
+
+
+TERMOMETRO = [   # (clave, sentido adverso, nombre simple, frase si preocupa)
+    ("inflacion", "alza", "Precios", "los precios están subiendo rápido"),
+    ("tc_var12", "alza", "Dólar", "el dólar está subiendo"),
+    ("pbi_yoy", "baja", "Ventas en la economía", "la economía crece poco"),
+    ("anchoveta_6m", "baja", "Pesca", "se está pescando poco"),
+]
+
+
+def termometro_general(series_dir: Path | None = None) -> dict:
+    """Un solo número de 0 a 100 para "cómo está el clima para los negocios": promedio de qué tan preocupante está
+    cada factor frente a su propia historia (0 = su mejor momento para un negocio, 100 = el peor). Pesos iguales."""
+    from app import nino
+    comps = []
+    for clave, sentido, nombre, frase in TERMOMETRO:
+        i = evaluar_indicador(clave, sentido, series_dir)
+        if i.color == "gris":
+            continue
+        pct = T.percentil_historico(_historia(ESPECIFICACIONES[clave], series_dir), i.valor)
+        comps.append({"nombre": nombre, "puntaje": round(pct if sentido == "alza" else 100 - pct), "frase": frase})
+    anom = nino.anomalia_mensual(series_dir)
+    if anom is not None and not anom.empty:
+        pct = T.percentil_historico(anom, float(anom.sort_values("fecha")["valor"].iloc[-1]))
+        comps.append({"nombre": "El Niño (mar caliente)", "puntaje": round(pct), "frase": "el mar está muy caliente"})
+    if not comps:
+        return {"puntaje": None, "color": "gris", "titulo": "Sin datos", "componentes": []}
+    for c in comps:
+        c["color"] = "rojo" if c["puntaje"] >= UMBRAL_ROJO else "amarillo" if c["puntaje"] >= UMBRAL_AMARILLO else "verde"
+    puntaje = round(sum(c["puntaje"] for c in comps) / len(comps))
+    color = "rojo" if puntaje >= 65 else "amarillo" if puntaje >= 45 else "verde"
+    titulo = {"rojo": "Clima difícil para los negocios", "amarillo": "Atención: hay factores que preocupan",
+              "verde": "Clima tranquilo para los negocios"}[color]
+    preocupan = [c["frase"] for c in sorted(comps, key=lambda c: -c["puntaje"]) if c["color"] == "rojo"]
+    return {"puntaje": puntaje, "color": color, "titulo": titulo, "componentes": comps, "preocupan": preocupan}
 
 
 def evaluar(perfil: str, series_dir: Path | None = None) -> dict:

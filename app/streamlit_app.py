@@ -13,7 +13,7 @@ import streamlit as st  # noqa: E402
 
 from app import chat, docs, geo, negocio, narrativa, nino, noticia, plan, voz  # noqa: E402
 from app.data import SERIES_DIR, analitica, catalogo, ficha, info  # noqa: E402
-from app.indicators import PERFILES, evaluar  # noqa: E402
+from app.indicators import PERFILES, evaluar, termometro_general  # noqa: E402
 
 load_dotenv()
 st.set_page_config(page_title="Termómetro BCRP + El Niño", page_icon="🌡️", layout="wide")
@@ -102,7 +102,32 @@ tabs = st.tabs(["Resumen", "Series", "El Niño", "Mapa y sensibilidad", "Mi nego
 
 # ---------- Resumen ----------
 with tabs[0]:
-    st.subheader("¿Cómo está la economía hoy?")
+    st.subheader("¿Cómo está el clima para los negocios hoy?")
+    termo = termometro_general()
+    if termo["puntaje"] is not None:
+        COLOR_HEX = {"verde": "#2e9e5b", "amarillo": "#e0a800", "rojo": "#d64541"}
+        EMOJI = {"verde": "🟢", "amarillo": "🟡", "rojo": "🔴"}
+        g1, g2 = st.columns([1, 1])
+        with g1:
+            fig_t = go.Figure(go.Indicator(
+                mode="gauge+number", value=termo["puntaje"], number={"suffix": " / 100"},
+                gauge={"axis": {"range": [0, 100]}, "bar": {"color": "#333333", "thickness": 0.25},
+                       "steps": [{"range": [0, 45], "color": COLOR_HEX["verde"]},
+                                 {"range": [45, 65], "color": COLOR_HEX["amarillo"]},
+                                 {"range": [65, 100], "color": COLOR_HEX["rojo"]}]}))
+            fig_t.update_layout(height=230, margin=dict(l=20, r=20, t=10, b=0))
+            st.plotly_chart(fig_t, width="stretch")
+        with g2:
+            st.markdown(f"### {EMOJI[termo['color']]} {termo['titulo']}")
+            if termo["preocupan"]:
+                st.write("Lo que más preocupa: " + ", ".join(termo["preocupan"]) + ".")
+            for c in termo["componentes"]:
+                st.markdown(f"{EMOJI[c['color']]} **{c['nombre']}**")
+        st.caption("Cómo se calcula: cada factor se compara con su propia historia (0 = su mejor momento para un negocio, "
+                   "100 = el peor) y el termómetro es el promedio. Verde hasta 45, amarillo hasta 65, rojo desde 65. "
+                   "No es un pronóstico.")
+    st.divider()
+    st.markdown("#### El detalle, dato por dato")
     clave = [("tc_interbancario_venta", "Dólar (S/)"), ("ipc_lima", "Inflación 12 meses (%)"),
              ("ipc_alimentos_var", "Precios de alimentos (variación %)"), ("pbi_mensual_yoy", "Crecimiento (%)"),
              ("tasa_referencia", "Tasa del Banco Central (%)"), ("desempleo_lima", "Desempleo Lima (%)"),
@@ -339,18 +364,34 @@ with tabs[5]:
     st.subheader("¿Leíste algo que no entendiste? Pégalo aquí")
     st.write("Pega una noticia, un comunicado o un párrafo de un informe (o sube un archivo). Te lo explico en palabras simples, te aclaro los términos "
              "técnicos y te muestro qué dicen hoy los datos oficiales del BCRP sobre ese tema.")
-    texto_noticia = st.text_area("Texto", height=220, placeholder="Pega aquí la noticia o el párrafo…")
-    archivo = st.file_uploader("…o sube un archivo", type=["pdf", "txt", "md"])
+    modo_n = st.radio("¿Cómo me pasas la noticia?", ["📝 Texto", "🔗 Link", "📷 Foto o captura"], horizontal=True)
+    texto_noticia, link_noticia, foto, archivo = "", "", None, None
+    if modo_n == "📝 Texto":
+        texto_noticia = st.text_area("Texto", height=200, placeholder="Pega aquí la noticia o el párrafo…")
+        archivo = st.file_uploader("…o sube un archivo", type=["pdf", "txt", "md"])
+    elif modo_n == "🔗 Link":
+        link_noticia = st.text_input("Link de la noticia", placeholder="https://…")
+        st.caption("Si la página pide suscripción o no se deja leer, copia y pega el texto.")
+    else:
+        foto = st.file_uploader("Sube una foto o captura de pantalla de la noticia", type=["png", "jpg", "jpeg", "webp"])
+        if foto is not None:
+            st.image(foto, width=300)
     if st.button("Explicar", type="primary"):
-        if archivo is not None:
-            texto_noticia = noticia.leer_archivo(archivo.name, archivo.getvalue())
         if not clave_api():
             st.info("Necesitas la API key de Gemini para usar esta función.")
         else:
             try:
                 from google import genai
+                cliente_n = genai.Client(api_key=clave_api())
                 with st.spinner("Leyendo y explicando…"):
-                    an, malos, recortado = noticia.analizar(genai.Client(api_key=clave_api()), texto_noticia)
+                    if foto is not None:
+                        an, malos, recortado = noticia.analizar_imagen(cliente_n, foto.getvalue(), foto.type or "image/jpeg")
+                    else:
+                        if archivo is not None:
+                            texto_noticia = noticia.leer_archivo(archivo.name, archivo.getvalue())
+                        elif link_noticia:
+                            texto_noticia = noticia.leer_link(link_noticia)
+                        an, malos, recortado = noticia.analizar(cliente_n, texto_noticia)
                     st.session_state.noticia = dict(an=an, malos=malos, recortado=recortado,
                                                     datos=noticia.datos_relacionados(an.temas))
             except ValueError as e:
