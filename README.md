@@ -119,7 +119,7 @@ Para actualizar los datos: `python scripts/fetch_bcrp.py` y `python scripts/fetc
 
 ### Capturas
 
-| Chat analista | El Niño | Mi negocio |
+| Chat analista | Explicador de noticias | Mi negocio |
 |---|---|---|
 | ![Chat](docs/img/chat.png) | ![Noticias](docs/img/noticia.png) | ![Mi negocio](docs/img/negocio.png) |
 
