@@ -121,7 +121,7 @@ Para actualizar los datos: `python scripts/fetch_bcrp.py` y `python scripts/fetc
 
 | Chat analista | El Niño | Mi negocio |
 |---|---|---|
-| ![Chat](docs/img/chat.png) | ![El Niño](docs/img/nino.png) | ![Mi negocio](docs/img/negocio.png) |
+| ![Chat](docs/img/chat.png) | ![Noticias](docs/img/noticia.png) | ![Mi negocio](docs/img/negocio.png) |
 
 ### Arquitectura
 
