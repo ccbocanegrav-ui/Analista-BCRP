@@ -27,20 +27,22 @@ En el mundo corporativo, donde trabajo, las decisiones se toman con analistas qu
 | 📦 **Comercio** | Quien compra mercadería, cajas o empaques en dólares | El dólar y el traslado de precios del distribuidor | Importador |
 | 🍇 **Agro** | Pequeños productores y agroexportadores del norte | El Niño en las cosechas y el dólar en sus ingresos | Exportador |
 
-Empezamos por **alimentos** porque es el sector con más emprendedores, la inflación de alimentos está alta y es donde tenemos evidencia directa de usuarios ([entrevista 1](docs/research/entrevista-1.md)).
+Empezamos por **alimentos** por dos razones:
+- **Los precios de alimentos están altos:** su variación está más alta que en 89 de cada 100 meses desde 2012, según la serie PN01383PM que usa la app.
+- **Ahí tenemos la evidencia más directa de un usuario:** una pérdida concreta y una disposición a pagar ([entrevista 1](docs/research/entrevista-1.md)).
 
 **Cuánto le cuesta.** Los choques de este año son grandes y se pueden medir con los datos que usa la app:
 
 | Dato oficial (descargado por la app) | Valor |
 |---|---|
 | Inflación en Lima a 12 meses (oct. 2026) | **5.3 %**, desde 1.4 % hace un año; más alta que el 86 % de los meses desde 2013 |
-| Temperatura del mar, región Niño 1+2 (NOAA, semana del 4 nov. 2026) | **+5.6 °C sobre lo normal**, el valor más alto de la serie desde 1981 |
+| Temperatura del mar, región Niño 1+2 (NOAA CPC, semana del 4 nov. 2026) | **+5.6 °C sobre lo normal**, el valor más alto de la serie descargada, que empieza en 1981 (serie marcada como no verificada en el catálogo: falta confirmar el archivo exacto de NOAA). El comunicado oficial ENFEN N° 20-2026 (13 nov. 2026) mantiene la “Alerta de El Niño Costero”: “se mantendría con una magnitud extraordinaria hasta febrero de 2027” |
 | Pesca de anchoveta, ene.–ago. 2026 vs. 2025 | **−73.1 %** (en El Niño 2023 fue −69.2 %) |
 | Dólar interbancario (nov. 2026) | S/ 3.43, +1.8 % en un año |
 
 Para un restaurante con margen de 15 %, que suban los insumos o el dólar puede comerse una parte importante de la ganancia antes de que el dueño se dé cuenta.
 
-**Cómo lo resuelve hoy.** Noticias sueltas, el grupo de WhatsApp del gremio o el contador una vez al mes. Los reportes del BCRP (por ejemplo, el Reporte de Inflación, de más de 100 páginas) son técnicos y BCRPData exige saber qué código de serie buscar.
+**Cómo lo resuelve hoy.** Noticias sueltas, el grupo de WhatsApp del gremio o el contador una vez al mes. Los reportes del BCRP (por ejemplo, el Reporte de Inflación de setiembre 2026 tiene 189 páginas) son técnicos y BCRPData exige saber qué código de serie buscar.
 
 **Evidencia: 3 conversaciones con usuarios potenciales** → [docs/research/](docs/research/)
 | Usuario | Lo más importante que dijo |
@@ -65,11 +67,18 @@ Una app web con 7 pestañas y, en el centro, un **chat analista**:
 - **Semáforo y plan por tipo de negocio:** importador, alimentos, exportador y pesca.
 - **El Niño:** temperatura del mar, episodios pasados y su efecto en la pesca, con un mapa por región.
 - **Mi negocio:** un simulador de cuánto cambia tu margen si el dólar o los insumos suben.
-- **Termómetro general:** un solo número de 0 a 100 con color (verde, amarillo o rojo) que resume precios, dólar, crecimiento, pesca y El Niño. Cada factor se compara con su propia historia. Debajo está el detalle dato por dato.
+- **Termómetro general:** un solo número de 0 a 100 con color (verde, amarillo o rojo) que resume precios, dólar, crecimiento, pesca y El Niño. Cada factor se compara con su propia historia y todos pesan lo mismo. Debajo está el detalle dato por dato. Cómo se calcula y por qué: [docs/metodologia.md](docs/metodologia.md).
 - **Explícame una noticia:** pegas el **texto**, el **link** o una **foto** de una noticia y te la explica como a alguien que no sabe nada de economía, marcando las cifras que no vienen de la noticia.
 - **Escuchar:** la explicación en audio.
 
-**Insight:** el problema de la IA en economía es que **inventa cifras**. Por eso aquí **la IA nunca calcula**: los números los calcula el código con las series oficiales y la IA solo redacta. Después, un **verificador** revisa que cada número de la respuesta exista en los datos consultados y avisa si no. En nuestra evaluación detectó el 100 % de las cifras inventadas, con 0 falsas alarmas ([docs/evaluacion.md](docs/evaluacion.md)).
+**Insight:** el problema de la IA en economía es que **inventa cifras**. Por eso aquí **la IA nunca calcula**: los números los calcula el código con las series oficiales y la IA solo redacta. Después, un **verificador** revisa que cada número de la respuesta exista en los datos consultados y avisa si no. **Evaluación** ([docs/evaluacion.md](docs/evaluacion.md), 16/11/2026):
+
+| Prueba | Resultado |
+|---|---|
+| Verificador, 9 casos etiquetados | Detectó las 4 cifras inventadas, con 0 falsas alarmas |
+| Chat real, 8 preguntas de referencia (modo rápido) | Herramienta correcta en 8 de 8; respetó su alcance en 8 de 8 (incluye 3 preguntas trampa: bolsa, dólar futuro y un dato que no tiene); 0 cifras sin respaldo; entre 1 y 11 s por respuesta |
+
+En la primera corrida salió 7 de 8 en dos criterios. Al revisar a mano, los dos “fallos” eran errores del evaluador y no del chat: usó `plan_exposicion`, que incluye el semáforo, y se negó a predecir el dólar diciendo “nadie puede saber”, una frase que el evaluador no reconocía. Corregimos el evaluador y volvimos a correrlo. Son pocas preguntas: no es una muestra estadística.
 
 ### ¿Por qué no basta con ChatGPT, Claude o Gemini?
 
@@ -78,21 +87,21 @@ Un emprendedor podría preguntarle a un chatbot general. La diferencia está en 
 | | Chatbot general | Termómetro BCRP + El Niño |
 |---|---|---|
 | **Datos** | Lo que aprendió en su entrenamiento o lo que encuentre en la web, sin garantía de que sea oficial o esté al día | Series oficiales del BCRP y de NOAA, descargadas por código, con fecha y código BCRPData |
-| **Cifras** | Puede inventarlas, y suena igual de seguro cuando lo hace | La IA no calcula. El código calcula, y un verificador marca cualquier número que no esté en los datos (100 % de detección en nuestra evaluación) |
+| **Cifras** | Puede inventarlas, y suena igual de seguro cuando lo hace. El importador de la [entrevista 3](docs/research/entrevista-3.md) tiene que pedirle cada vez que verifique sus fuentes | La IA no calcula. El código calcula, y un verificador marca cualquier número que no esté en los datos (4 de 4 cifras inventadas detectadas en la evaluación) |
 | **Tu negocio** | Respuesta genérica, salvo que le expliques todo cada vez | Semáforo por sector, simulador de margen y plan de acción ya armados |
 | **Fuentes** | A veces cita y a veces no | Siempre cita la fuente: el código de la serie o la página del Reporte de Inflación, del Programa Monetario o del ENFEN |
 | **Lenguaje** | Tiende a la jerga | Ajustado con usuarios reales. Por ejemplo, “percentil” pasó a ser “más alto que en 86 de cada 100 meses” |
 | **Iniciativa** | Espera a que preguntes | Lo que sigue en el roadmap son alertas cuando tu semáforo cambia de color o el ENFEN emite una alerta |
 | **Límites** | Puede dar consejos de inversión | No da recomendaciones de inversión, y avisa cuando algo es correlación y no causa |
-| **Precio** | Desde unos US$ 20 al mes (≈ S/ 69) en los planes pagos más comunes | S/ 9.90 al mes |
+| **Precio** | ChatGPT Plus cuesta US$ 20 al mes (≈ S/ 69), según comparativas de precios de 2026[^chatgpt] | S/ 9.90 al mes |
 
 Siendo honestos: un chatbot con búsqueda web puede encontrar el dato del dólar. Lo que no hace es juntar en un solo lugar los datos oficiales al día, el cálculo hecho por código, la verificación de cada cifra y el contexto de tu sector, y eso es lo que construimos.
 
 ## 5. Why now
 
-- **Los LLM ya usan herramientas de forma confiable y barata.** Hace tres años, un modelo que consultara APIs y entregara JSON validado era caro e inestable. Hoy una pregunta cuesta menos de un céntimo de dólar (ver el modelo de negocio).
+- **La IA ya es barata y obediente:** los modelos actuales consultan herramientas y devuelven JSON validado de forma nativa, y responder una pregunta nos cuesta menos de un céntimo de dólar, según nuestra medición y el precio oficial de Gemini[^gemini]. Eso permite cobrar S/ 9.90 con margen.
 - **Los datos están abiertos:** la API de BCRPData y el índice semanal de NOAA son públicos y gratuitos.
-- **El momento:** 2026 tiene El Niño en curso con el mar en récord e inflación al alza. Es justo cuando una PYME más necesita entender qué está pasando.
+- **El momento:** el comunicado oficial ENFEN N° 20-2026 (13 nov. 2026) mantiene la “Alerta de El Niño Costero” y dice que El Niño “se mantendría con una magnitud extraordinaria hasta febrero de 2027”. Además, la inflación en Lima subió de 1.4 % a 5.3 % en un año. Es cuando un emprendedor más necesita entender qué está pasando.
 
 ## 6. Demo
 
@@ -102,7 +111,7 @@ Siendo honestos: un chatbot con búsqueda web puede encontrar el dato del dólar
 python -m venv .venv && .venv\Scripts\activate      # Mac/Linux: source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env                                # y pega tu GEMINI_API_KEY
-python -m pytest -q                                 # 92 pruebas
+python -m pytest -q                                 # 98 pruebas
 streamlit run app/streamlit_app.py
 ```
 
@@ -118,7 +127,7 @@ Para actualizar los datos: `python scripts/fetch_bcrp.py` y `python scripts/fetc
 
 ```mermaid
 flowchart LR
-    U[Dueño de PYME] --> UI[App Streamlit<br/>app/streamlit_app.py]
+    U[Emprendedor] --> UI[App Streamlit<br/>app/streamlit_app.py]
     subgraph Datos oficiales
         B[API BCRPData] -->|scripts/fetch_bcrp.py| S[(data/series/*.csv)]
         N[NOAA Niño 1+2] -->|scripts/fetch_noaa.py| S
@@ -128,7 +137,7 @@ flowchart LR
     C -->|1. elige herramientas| H[Herramientas en código<br/>resúmenes, semáforo, mapa,<br/>simulador, búsqueda en docs]
     H --> S
     H --> I
-    C -->|2. solo redacta| G[Gemini Flash<br/>respaldo entre modelos]
+    C -->|2. solo redacta| G[Gemini Flash-Lite<br/>respaldo: Flash 3.6 / 3.8 / 3.7 / 3.5]
     G --> V[Verificador de cifras<br/>chat.cifras_no_respaldadas]
     V --> UI
     C <--> K[(Caché 24 h)]
@@ -138,12 +147,13 @@ flowchart LR
 
 | Qué | Para qué | Por qué |
 |---|---|---|
-| **Gemini Flash** (`gemini-3.6-flash`; si se agota, prueba 3.8, 3.7 o 3.5) | Redactar respuestas, explicar noticias en JSON | Barato y rápido, soporta herramientas y salidas estructuradas, y tiene plan gratuito para el demo |
+| **Gemini 3.5 Flash-Lite** (principal en el modo rápido y en las noticias) | Redactar respuestas, explicar noticias en JSON, leer fotos de noticias | El 16/11/2026, con Google saturado, respondió un saludo en 2 s, cuando Flash tardaba de 40 a 58 s o fallaba. Basta para redactar con datos ya calculados |
+| **Gemini Flash** (`gemini-3.6-flash`; respaldo: 3.8, 3.7 y 3.5) | Modo completo (simulación de margen) y respaldo | Elige herramientas por sí mismo; cada modelo tiene su propia cuota gratuita |
 | **API BCRPData** | Series de dólar, inflación, PBI, tasa, empleo y pesca | Fuente oficial y gratuita |
 | **NOAA CPC** | Temperatura del mar Niño 1+2, semanal | El indicador que usa el ENFEN para vigilar El Niño costero |
 | **gTTS** | Audio de las explicaciones | Gratis y sin clave |
 
-**Modo rápido:** el código elige las herramientas por palabras clave y Gemini se llama **una sola vez** por pregunta, en lugar de unas 4. Así gasta 4 veces menos y responde en unos 10 s. Las preguntas que requieren simular el margen usan el modo completo, en el que Gemini elige las herramientas.
+**Modo rápido:** el código elige las herramientas por palabras clave y Gemini se llama **una sola vez** por pregunta, en lugar de unas 4. Así gasta 4 veces menos y responde en 1 a 11 s, según lo medido en la evaluación del 16/11/2026. Las preguntas que requieren simular el margen usan el modo completo, en el que Gemini elige las herramientas.
 
 ## 7. Modelo de negocio
 
@@ -156,13 +166,13 @@ flowchart LR
 
 **Por qué S/ 9.90:** en la entrevista 1, una emprendedora de repostería dijo que pagaría **“10 soles al mes, porque con un solo pedido ya lo recupero”**, siempre que tenga alertas. Al principio pensamos en S/ 19 y lo bajamos por esa evidencia.
 
-**Costo por usuario.** Es un cálculo conservador, con el precio estándar de Gemini 3.6 Flash: US$ 1.50 por millón de tokens de entrada y US$ 7.50 por millón de salida. El modo rápido usa Flash-Lite, que es más barato.
+**Costo por usuario.** Es un cálculo conservador, con el precio estándar de Gemini 3.6 Flash: US$ 1.50 por millón de tokens de entrada y US$ 7.50 por millón de salida[^gemini]. El modo rápido usa Flash-Lite, que es más barato, así que el costo real es menor.
 
 | Concepto | Cálculo | Costo |
 |---|---|---|
-| 1 pregunta en modo rápido | ~1,500 tokens de entrada (medido) + ~400 de salida | ≈ US$ 0.005 |
+| 1 pregunta en modo rápido | ~600 a 1,900 tokens de entrada (medido en 3 preguntas) + ~180 de salida (medido) | ≈ US$ 0.004-0.005 |
 | Usuario intensivo | 100 preguntas al mes | ≈ US$ 0.53 ≈ **S/ 1.8** |
-| Servidor | Streamlit Cloud gratis para el demo; en producción, un servidor de ~US$ 7-25 al mes compartido entre todos los usuarios | < S/ 1 por usuario con 100 usuarios |
+| Servidor | Streamlit Cloud gratis para el demo; en producción estimamos un servidor pequeño de US$ 7-25 al mes, compartido entre todos los usuarios | < S/ 1 por usuario con 100 usuarios (estimado) |
 | **Total** | | **≈ S/ 2-3 al mes por usuario intensivo**, frente a S/ 9.90 de ingreso (margen bruto ≈ 70-80 %; mayor con usuarios que preguntan menos) |
 
 Las respuestas repetidas salen de la caché y no cuestan tokens.
@@ -194,10 +204,11 @@ Más detalle en [docs/herramientas-curso.md](docs/herramientas-curso.md).
 Usé Claude como agente de programación. El agente escribió el código; yo puse el problema, los datos, las decisiones de producto y la revisión.
 
 **Lo que hice yo:**
-- Elegí el problema y el usuario: PYMES expuestas al dólar, los precios y El Niño.
+- Elegí el problema y el usuario: emprendedores de los sectores más expuestos al dólar, los precios y El Niño.
+- Hice las 3 entrevistas con usuarios potenciales y decidí qué cambiar por ellas: el precio, el lenguaje, el termómetro y las noticias por foto o link.
 - Elegí las series del catálogo y verifiqué sus códigos en BCRPData.
 - Busqué y elegí los documentos oficiales que lee el chat: el Reporte de Inflación, la nota del Programa Monetario y el comunicado ENFEN.
-- Definí el modelo de negocio: cliente PYME, freemium y S/ 19 al mes.
+- Definí el modelo de negocio: freemium. Partí de S/ 19 al mes y lo bajé a S/ 9.90 por la entrevista 1.
 - Probé la app y reporté errores: la lentitud del chat, la cuota agotada de Gemini y las respuestas que mezclaban datos de pesca con un negocio agrícola.
 - Tomé decisiones de producto. Por ejemplo, dejé fuera la Encuesta de Expectativas del BCRP para que el chat no se lea como una recomendación de inversión.
 - Revisé y entendí las partes principales del código: el verificador de cifras, el chat y el modo rápido.
@@ -223,5 +234,16 @@ Usé Claude como agente de programación. El agente escribió el código; yo pus
 - Que El Niño y los precios se muevan juntos no prueba causalidad, y la app lo dice.
 - Las series marcadas como no verificadas en `data/catalog.json` se avisan en la respuesta.
 - La clave de Gemini va en `.env` o en los Secrets de Streamlit, nunca en el repo.
+
+## Fuentes
+
+- Series económicas: [BCRPData](https://estadisticas.bcrp.gob.pe/estadisticas/series/), con el código de cada serie en `data/catalog.json`.
+- Temperatura del mar: [NOAA CPC, índices Niño](https://cpc.ncep.noaa.gov/data/indices/).
+- Documentos indexados: Reporte de Inflación (setiembre 2026) y nota informativa del Programa Monetario (noviembre 2026) del BCRP, y comunicado oficial ENFEN N° 20-2026. Los PDF se descargan aparte; el índice está en `data/docs_index.json`.
+- Metodología del termómetro, el semáforo y el verificador: [docs/metodologia.md](docs/metodologia.md).
+- Entrevistas con usuarios: [docs/research/](docs/research/).
+
+[^gemini]: Precios de Gemini: [Gemini Developer API pricing](https://ai.google.dev/gemini-api/docs/pricing) y [What's new in Gemini 3.6 Flash](https://ai.google.dev/gemini-api/docs/whats-new-gemini-3.6), consultados el 16/11/2026.
+[^chatgpt]: Precio de ChatGPT Plus según comparativas de terceros de 2026 (por ejemplo, [CometAPI](https://www.cometapi.com/chatgpt-pricing-2026-free-vs-go-vs-plus-vs-pro/) y [tl;dv](https://tldv.io/blog/chatgpt-pricing/)). No es la página oficial de OpenAI; el precio final puede variar por impuestos locales.
 
 Licencia: ver [LICENSE](LICENSE).

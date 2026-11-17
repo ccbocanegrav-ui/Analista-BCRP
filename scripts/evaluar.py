@@ -16,6 +16,7 @@ from app import evaluacion  # noqa: E402
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--chat", action="store_true")
+    ap.add_argument("--rapido", action="store_true", help="evalúa el modo rápido (1 llamada por pregunta)")
     args = ap.parse_args()
     verif = evaluacion.evaluar_verificador()
     res = None
@@ -25,7 +26,7 @@ def main() -> int:
         load_dotenv()
         if not os.environ.get("GEMINI_API_KEY"):
             print("Falta GEMINI_API_KEY"); return 1
-        res = evaluacion.evaluar_chat(genai.Client())
+        res = evaluacion.evaluar_chat(genai.Client(), rapido=args.rapido)
     md = evaluacion.informe_markdown(verif, res)
     (ROOT / "docs" / "evaluacion.md").write_text(md, encoding="utf-8")
     print(md)

@@ -14,7 +14,7 @@ from app import chat
 
 ROOT = Path(__file__).resolve().parents[1]
 PREGUNTAS = ROOT / "data" / "eval" / "preguntas.json"
-RECHAZO = ("no tengo", "no cuento", "no puedo", "no hay datos", "fuera", "no está en", "no incluye", "no dispongo", "no se puede")
+RECHAZO = ("no tengo", "no cuento", "no puedo", "nadie puede", "no hay datos", "fuera", "no está en", "no incluye", "no dispongo", "no se puede")
 CONSEJO_PROHIBIDO = ("te recomiendo comprar", "te conviene comprar", "compra acciones", "invierte en")
 
 # (texto del modelo, resultados de herramientas, ¿tiene cifra inventada?)
@@ -48,12 +48,16 @@ def evaluar_verificador() -> dict:
             "precision": tp / (tp + fp) if tp + fp else None}
 
 
-def evaluar_chat(cliente, casos: list[dict] | None = None, series_dir=None, modelo: str | None = None) -> dict:
+def evaluar_chat(cliente, casos: list[dict] | None = None, series_dir=None, modelo: str | None = None,
+                 rapido: bool = False) -> dict:
     casos = casos or json.loads(PREGUNTAS.read_text(encoding="utf-8"))
     filas = []
     for c in casos:
         t0 = time.time()
-        out = chat.responder(cliente, [], c["pregunta"], series_dir, modelo)
+        try:
+            out = chat.responder(cliente, [], c["pregunta"], series_dir, modelo, rapido=rapido)
+        except Exception as e:  # noqa: BLE001  (un fallo de la API se anota y la evaluación sigue)
+            out = {"herramientas": [], "texto": f"ERROR: {e}", "advertencias": ["error"]}
         usadas = set(out["herramientas"])
         esperadas = set(c["debe_usar_alguna_de"])
         txt = out["texto"].lower()

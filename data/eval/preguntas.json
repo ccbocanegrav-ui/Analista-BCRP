@@ -1,10 +1,64 @@
 [
-  {"id": "dolar", "pregunta": "¿Cómo está el dólar en los últimos meses?", "debe_usar_alguna_de": ["resumen_serie", "datos_serie"], "fuera_de_alcance": false},
-  {"id": "inflacion", "pregunta": "¿Qué tan rápido están subiendo los precios?", "debe_usar_alguna_de": ["resumen_serie", "datos_serie"], "fuera_de_alcance": false},
-  {"id": "semaforo_pesca", "pregunta": "Tengo una planta de harina de pescado, ¿qué tan expuesta estoy?", "debe_usar_alguna_de": ["semaforo"], "fuera_de_alcance": false},
-  {"id": "regiones", "pregunta": "¿Qué región depende más de la anchoveta?", "debe_usar_alguna_de": ["exposicion_regional"], "fuera_de_alcance": false},
-  {"id": "concepto", "pregunta": "¿Qué es la tasa de referencia y por qué me importa?", "debe_usar_alguna_de": ["buscar_fichas", "resumen_serie"], "fuera_de_alcance": false},
-  {"id": "fuera_bolsa", "pregunta": "¿Qué acciones de la bolsa me conviene comprar mañana?", "debe_usar_alguna_de": [], "fuera_de_alcance": true},
-  {"id": "fuera_futuro", "pregunta": "¿Cuál será exactamente el dólar el próximo mes?", "debe_usar_alguna_de": [], "fuera_de_alcance": true},
-  {"id": "fuera_dato", "pregunta": "¿Cuántos turistas llegaron a Cusco en octubre?", "debe_usar_alguna_de": [], "fuera_de_alcance": true}
+  {
+    "id": "dolar",
+    "pregunta": "¿Cómo está el dólar en los últimos meses?",
+    "debe_usar_alguna_de": [
+      "resumen_serie",
+      "datos_serie"
+    ],
+    "fuera_de_alcance": false
+  },
+  {
+    "id": "inflacion",
+    "pregunta": "¿Qué tan rápido están subiendo los precios?",
+    "debe_usar_alguna_de": [
+      "resumen_serie",
+      "datos_serie"
+    ],
+    "fuera_de_alcance": false
+  },
+  {
+    "id": "semaforo_pesca",
+    "pregunta": "Tengo una planta de harina de pescado, ¿qué tan expuesta estoy?",
+    "debe_usar_alguna_de": [
+      "semaforo",
+      "plan_exposicion"
+    ],
+    "fuera_de_alcance": false
+  },
+  {
+    "id": "regiones",
+    "pregunta": "¿Qué región depende más de la anchoveta?",
+    "debe_usar_alguna_de": [
+      "exposicion_regional"
+    ],
+    "fuera_de_alcance": false
+  },
+  {
+    "id": "concepto",
+    "pregunta": "¿Qué es la tasa de referencia y por qué me importa?",
+    "debe_usar_alguna_de": [
+      "buscar_fichas",
+      "resumen_serie"
+    ],
+    "fuera_de_alcance": false
+  },
+  {
+    "id": "fuera_bolsa",
+    "pregunta": "¿Qué acciones de la bolsa me conviene comprar mañana?",
+    "debe_usar_alguna_de": [],
+    "fuera_de_alcance": true
+  },
+  {
+    "id": "fuera_futuro",
+    "pregunta": "¿Cuál será exactamente el dólar el próximo mes?",
+    "debe_usar_alguna_de": [],
+    "fuera_de_alcance": true
+  },
+  {
+    "id": "fuera_dato",
+    "pregunta": "¿Cuántos turistas llegaron a Cusco en octubre?",
+    "debe_usar_alguna_de": [],
+    "fuera_de_alcance": true
+  }
 ]
