@@ -1,6 +1,6 @@
 # Termómetro BCRP + El Niño
 
-> **Hacemos que las PYMES peruanas entiendan en 1 minuto cómo el dólar, la inflación y El Niño afectan su negocio, mediante un analista con IA que solo responde con datos oficiales del BCRP y de NOAA, y que verifica cada cifra.**
+> **Hacemos que los emprendedores peruanos entiendan en 1 minuto cómo el dólar, los precios y El Niño afectan su negocio, mediante un analista con IA que solo responde con datos oficiales del BCRP y de NOAA, y que verifica cada cifra.**
 
 **Demo:** https://2bcqbjxapphgmsq5tw6jj5s.streamlit.app/ · o en local: ver [Cómo correrlo](#cómo-correrlo) · **Video de respaldo:** `[COMPLETAR: link]`
 
@@ -8,7 +8,7 @@
 
 ## 1. One-liner
 
-Hacemos **un analista económico de bolsillo** para **dueños de PYMES expuestas al dólar, los precios y El Niño** (importadores, restaurantes, bodegas, pesca y harina de pescado) mediante **un chat con IA conectado a las series oficiales del BCRP y a la temperatura del mar de NOAA**, que explica en lenguaje simple qué significa cada dato para su margen.
+Hacemos **un analista económico de bolsillo** para **emprendedores y trabajadores de los sectores más expuestos al dólar, los precios y El Niño** (alimentos, pesca, comercio y agro) mediante **un chat con IA conectado a las series oficiales del BCRP y a la temperatura del mar de NOAA**, que explica en lenguaje simple qué significa cada dato para su margen.
 
 ## 2. Founder
 
@@ -18,7 +18,16 @@ En el mundo corporativo, donde trabajo, las decisiones se toman con analistas qu
 
 ## 3. Problema
 
-**Quién lo sufre.** El dueño de una PYME que compra en dólares, vende alimentos o depende de la pesca. Toma decisiones de precios, compras e inventario, pero no sabe leer un reporte del BCRP ni tiene un analista.
+**Quién lo sufre.** El emprendedor que decide precios, compras e inventario sin saber leer un reporte del BCRP y sin un analista. Nos enfocamos en los 4 sectores donde estos choques pegan más fuerte y donde la app ya trae un semáforo específico:
+
+| Sector | Ejemplos | Qué le pega | Semáforo de la app |
+|---|---|---|---|
+| 🍰 **Alimentos** (usuario principal) | Repostería, restaurantes, cevicherías, bodegas | Precios de insumos (mantequilla, huevo, chocolate), calor de El Niño en el delivery | Comercio y venta de alimentos |
+| 🐟 **Pesca y mar** | Pescadores, plantas de harina, proveedores del norte | La anchoveta cae con El Niño (−73 % este año) | Pesca y harina de pescado |
+| 📦 **Comercio** | Quien compra mercadería, cajas o empaques en dólares | El dólar y el traslado de precios del distribuidor | Importador |
+| 🍇 **Agro** | Pequeños productores y agroexportadores del norte | El Niño en las cosechas y el dólar en sus ingresos | Exportador |
+
+Empezamos por **alimentos** porque es el sector con más emprendedores, la inflación de alimentos está alta y es donde tenemos evidencia directa de usuarios ([entrevista 1](docs/research/entrevista-1.md)).
 
 **Cuánto le cuesta.** Los choques de este año son grandes y se pueden medir con los datos que usa la app:
 
@@ -40,7 +49,7 @@ Para un restaurante con margen de 15 %, que suban los insumos o el dólar puede 
 
 Una app web con 7 pestañas y, en el centro, un **chat analista**:
 
-- **Chat:** respondes “¿cómo está el dólar?” o “tengo una planta de harina en Piura, ¿qué tan expuesta estoy?”, y recibes una respuesta corta, con un ejemplo para tu negocio y la fuente (código BCRPData o página del reporte).
+- **Chat:** preguntas “tengo un emprendimiento de postres, ¿cómo me afecta la subida de precios?” o “tengo una cevichería en Piura, ¿cómo me afecta El Niño?”, y recibes una respuesta corta, con un ejemplo para tu negocio y la fuente (código BCRPData o página del reporte).
 - **Semáforo y plan por tipo de negocio:** importador, alimentos, exportador y pesca.
 - **El Niño:** temperatura del mar, episodios pasados y su efecto en la pesca, con un mapa por región.
 - **Mi negocio:** un simulador de cuánto cambia tu margen si el dólar o los insumos suben.
@@ -48,6 +57,23 @@ Una app web con 7 pestañas y, en el centro, un **chat analista**:
 - **Escuchar:** la explicación en audio.
 
 **Insight:** el problema de la IA en economía es que **inventa cifras**. Por eso aquí **la IA nunca calcula**: los números los calcula el código con las series oficiales y la IA solo redacta. Después, un **verificador** revisa que cada número de la respuesta exista en los datos consultados y avisa si no. En nuestra evaluación detectó el 100 % de las cifras inventadas, con 0 falsas alarmas ([docs/evaluacion.md](docs/evaluacion.md)).
+
+### ¿Por qué no basta con ChatGPT, Claude o Gemini?
+
+Un emprendedor podría preguntarle a un chatbot general. La diferencia está en qué datos usa y en qué hace con ellos:
+
+| | Chatbot general | Termómetro BCRP + El Niño |
+|---|---|---|
+| **Datos** | Lo que aprendió en su entrenamiento o lo que encuentre en la web, sin garantía de que sea oficial o esté al día | Series oficiales del BCRP y de NOAA, descargadas por código, con fecha y código BCRPData |
+| **Cifras** | Puede inventarlas, y suena igual de seguro cuando lo hace | La IA no calcula. El código calcula, y un verificador marca cualquier número que no esté en los datos (100 % de detección en nuestra evaluación) |
+| **Tu negocio** | Respuesta genérica, salvo que le expliques todo cada vez | Semáforo por sector, simulador de margen y plan de acción ya armados |
+| **Fuentes** | A veces cita y a veces no | Siempre cita la fuente: el código de la serie o la página del Reporte de Inflación, del Programa Monetario o del ENFEN |
+| **Lenguaje** | Tiende a la jerga | Ajustado con usuarios reales. Por ejemplo, “percentil” pasó a ser “más alto que en 86 de cada 100 meses” |
+| **Iniciativa** | Espera a que preguntes | Lo que sigue en el roadmap son alertas cuando tu semáforo cambia de color o el ENFEN emite una alerta |
+| **Límites** | Puede dar consejos de inversión | No da recomendaciones de inversión, y avisa cuando algo es correlación y no causa |
+| **Precio** | Desde unos US$ 20 al mes (≈ S/ 69) en los planes pagos más comunes | S/ 9.90 al mes |
+
+Siendo honestos: un chatbot con búsqueda web puede encontrar el dato del dólar. Lo que no hace es juntar en un solo lugar los datos oficiales al día, el cálculo hecho por código, la verificación de cada cifra y el contexto de tu sector, y eso es lo que construimos.
 
 ## 5. Why now
 
@@ -108,25 +134,31 @@ flowchart LR
 
 ## 7. Modelo de negocio
 
-**Quién paga:** el dueño de la PYME.
+**Quién paga:** el emprendedor o el trabajador independiente del sector. El precio está pensado para que sea accesible: lo recupera con un solo pedido bien cotizado.
 
 | Plan | Precio | Incluye |
 |---|---|---|
-| Gratis | S/ 0 | Series, El Niño, mapa y 5 preguntas al mes |
-| **Pro** | **S/ 19 al mes** | Chat ilimitado, semáforo y plan para tu negocio, simulador, explicador de noticias y alertas |
+| Gratis | S/ 0 | Resumen, series, El Niño, mapa, semáforo de tu sector y 5 preguntas al chat por mes |
+| **Emprendedor** | **S/ 9.90 al mes** | Chat ilimitado, simulador de margen, plan para tu negocio, explicador de noticias y alertas cuando tu semáforo cambia o el ENFEN emite una alerta |
 
-**Costo por usuario** (precio estándar de Gemini 3.6 Flash: US$ 1.50 por millón de tokens de entrada y US$ 7.50 por millón de salida):
+**Por qué S/ 9.90:** en la entrevista 1, una emprendedora de repostería dijo que pagaría **“10 soles al mes, porque con un solo pedido ya lo recupero”**, siempre que tenga alertas. Al principio pensamos en S/ 19 y lo bajamos por esa evidencia.
+
+**Costo por usuario.** Es un cálculo conservador, con el precio estándar de Gemini 3.6 Flash: US$ 1.50 por millón de tokens de entrada y US$ 7.50 por millón de salida. El modo rápido usa Flash-Lite, que es más barato.
 
 | Concepto | Cálculo | Costo |
 |---|---|---|
 | 1 pregunta en modo rápido | ~1,500 tokens de entrada (medido) + ~400 de salida | ≈ US$ 0.005 |
-| Usuario Pro intensivo | 100 preguntas al mes | ≈ US$ 0.53 ≈ **S/ 1.8** |
+| Usuario intensivo | 100 preguntas al mes | ≈ US$ 0.53 ≈ **S/ 1.8** |
 | Servidor | Streamlit Cloud gratis para el demo; en producción, un servidor de ~US$ 7-25 al mes compartido entre todos los usuarios | < S/ 1 por usuario con 100 usuarios |
-| **Total** | | **≈ S/ 2-3 al mes por usuario Pro**, frente a S/ 19 de ingreso (margen bruto ≈ 85 %) |
+| **Total** | | **≈ S/ 2-3 al mes por usuario intensivo**, frente a S/ 9.90 de ingreso (margen bruto ≈ 70-80 %; mayor con usuarios que preguntan menos) |
 
 Las respuestas repetidas salen de la caché y no cuestan tokens.
 
-**Qué sigue:** alertas por WhatsApp cuando el semáforo de tu negocio cambia de color, más regiones y sectores, y una alianza con gremios o cámaras de comercio para llegar a sus asociados.
+**Qué sigue:**
+- **Alertas por WhatsApp** cuando el semáforo de tu sector cambia de color o el ENFEN emite una alerta.
+- **Precios de insumos específicos** (huevo, mantequilla, azúcar), un pedido directo de la entrevista 1.
+- **Más sectores:** transporte y textil.
+- **Llegar a los primeros usuarios** por gremios, asociaciones de emprendedores y comunidades de repostería y gastronomía en redes.
 
 ## 8. Herramientas del curso
 

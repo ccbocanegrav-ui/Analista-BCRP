@@ -62,6 +62,22 @@ def test_modelos_lite_solo_toma_flash_lite_estables():
     assert chat.modelos_lite(c) == ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"]
 
 
+def test_cada_sector_recibe_su_semaforo():
+    casos = {"Tengo un emprendimiento de postres, ¿cómo me afecta la subida de precios?": rapido.ALIMENTOS,
+             "Tengo una cevichería en Piura, ¿cómo me afecta El Niño?": rapido.ALIMENTOS,
+             "Compro mercadería en dólares, ¿cómo está el dólar?": rapido.IMPORTADOR,
+             "Soy agroexportadora de uvas, ¿cómo me afecta El Niño?": rapido.EXPORTADOR,
+             "Tengo una planta de harina de pescado, ¿qué tan expuesta estoy?": rapido.PESCA}
+    for q, perfil in casos.items():
+        assert ("plan_exposicion", {"perfil": perfil}) in rapido.elegir_herramientas(q), q
+
+
+def test_harina_de_reposteria_no_es_harina_de_pescado():
+    h = rapido.elegir_herramientas("Compré harina y azúcar para mis tortas, ¿van a subir?")
+    assert ("resumen_serie", {"id": "harina_precio"}) not in h
+    assert ("resumen_serie", {"id": "ipc_alimentos_var"}) in h
+
+
 def test_margen_va_al_modo_completo():
     assert not rapido.sirve("Mi margen es 20%, ¿qué pasa si sube el dólar?")
     assert rapido.sirve("¿Cómo está el dólar?")

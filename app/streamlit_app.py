@@ -80,7 +80,13 @@ def aviso_sin_datos():
 
 # ---------- cabecera ----------
 st.title("🌡️ Termómetro BCRP + El Niño")
-st.caption("Explicamos la economía peruana con datos oficiales del BCRP, en palabras simples, para quien tiene un negocio.")
+st.caption("Tu analista económico de bolsillo: te explica en palabras simples cómo el dólar, los precios y El Niño afectan "
+           "a tu negocio, con datos oficiales del BCRP y de NOAA.")
+c1, c2, c3, c4 = st.columns(4)
+c1.markdown("🍰 **Alimentos**  \nrepostería, restaurantes, bodegas")
+c2.markdown("🐟 **Pesca y mar**  \ncevicherías, pescadores, plantas")
+c3.markdown("📦 **Comercio**  \nlo que compras en dólares")
+c4.markdown("🍇 **Agro**  \nproductores y agroexportadores")
 
 with st.sidebar:
     st.header("Cómo usar esta app")
@@ -97,7 +103,8 @@ tabs = st.tabs(["Resumen", "Series", "El Niño", "Mapa y sensibilidad", "Mi nego
 # ---------- Resumen ----------
 with tabs[0]:
     st.subheader("¿Cómo está la economía hoy?")
-    clave = [("tc_interbancario_venta", "Dólar (S/)"), ("ipc_lima", "Inflación 12 meses (%)"), ("pbi_mensual_yoy", "Crecimiento (%)"),
+    clave = [("tc_interbancario_venta", "Dólar (S/)"), ("ipc_lima", "Inflación 12 meses (%)"),
+             ("ipc_alimentos_var", "Precios de alimentos (variación %)"), ("pbi_mensual_yoy", "Crecimiento (%)"),
              ("tasa_referencia", "Tasa del Banco Central (%)"), ("desempleo_lima", "Desempleo Lima (%)"),
              ("harina_precio", "Harina de pescado (US$/t)")]
     clave = [(s, n) for s, n in clave if hay(s)]
@@ -445,8 +452,10 @@ with tabs[6]:
                                 st.session_state.pendiente = q
                                 st.rerun()
         if not hist:
-            st.caption("Prueba con: «¿Cómo está el dólar y qué significa para mi negocio?» · «¿Qué es El Niño y cómo afecta los precios?» · "
-                       "«¿Qué región depende más de la anchoveta?»")
+            st.caption("Prueba con: 🍰 «Tengo un emprendimiento de postres, ¿cómo me afecta la subida de precios?» · "
+                       "🐟 «Tengo una cevichería en Piura, ¿cómo me afecta El Niño?» · "
+                       "📦 «Compro mercadería en dólares, ¿cómo está el dólar?» · "
+                       "🍇 «Soy agroexportadora de uvas, ¿cómo me afecta El Niño?»")
         pregunta = st.session_state.pop("pendiente", None) or st.chat_input("Escribe tu pregunta")
         if pregunta:
             with st.chat_message("user"):

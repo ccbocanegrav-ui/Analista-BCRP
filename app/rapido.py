@@ -20,7 +20,9 @@ IMPORTADOR, ALIMENTOS, EXPORTADOR, PESCA = PERFILES[:4]
 # (palabras clave, herramienta, argumentos). Las palabras se buscan sin tildes y en minúsculas.
 REGLAS: list[tuple[tuple[str, ...], str, dict]] = [
     (("dolar", "tipo de cambio", "divisa"), "resumen_serie", {"id": "tc_interbancario_venta"}),
-    (("alimento", "comida", "canasta"), "resumen_serie", {"id": "ipc_alimentos_var"}),
+    (("alimento", "comida", "canasta", "insumo", "mantequilla", "chocolate", "huevo", "azucar", "leche", "fruta",
+      "postre", "reposteria", "pasteleria", "panaderia", "torta", "restaurante", "cevicheria", "menu", "bodega"),
+     "resumen_serie", {"id": "ipc_alimentos_var"}),
     (("precio", "inflacion", "ipc", "caro", "costo de vida"), "resumen_serie", {"id": "ipc_lima"}),
     (("tasa", "interes", "credito", "prestamo"), "resumen_serie", {"id": "tasa_referencia"}),
     (("pbi", "economia", "crecimiento", "crece", "actividad"), "resumen_serie", {"id": "pbi_mensual_yoy"}),
@@ -30,21 +32,24 @@ REGLAS: list[tuple[tuple[str, ...], str, dict]] = [
     (("ingreso", "sueldo", "salario"), "resumen_serie", {"id": "ingreso_formal_real"}),
     (("nino", "clima", "mar ", "calentamiento", "anomalia", "enfen", "noaa", "temperatura"), "anomalia_nino", {}),
     (("nino", "episodio", "anchoveta", "pesca"), "episodios_el_nino", {}),
-    (("anchoveta", "pesca", "pesquer"), "resumen_serie", {"id": "anchoveta_total"}),
+    (("anchoveta", "pesca", "pesquer", "cevicheria", "pescado"), "resumen_serie", {"id": "anchoveta_total"}),
     (("region", "mapa"), "exposicion_regional", {}),
-    (("harina",), "resumen_serie", {"id": "harina_precio"}),
+    (("harina de pescado", "harinera", "planta de harina"), "resumen_serie", {"id": "harina_precio"}),
 ]
-PERFIL_CLAVES = [
-    (("harina", "pesca", "pesquer", "anchoveta"), PESCA),
-    (("importo", "importador", "importa", "mercaderia", "insumos"), IMPORTADOR),
+PERFIL_CLAVES = [   # el primero que coincide gana: los más específicos van antes
+    (("harina de pescado", "planta de harina", "harinera", "pescador", "pesquer", "anchoveta"), PESCA),
+    (("bodega", "restaurante", "pollo", "comida", "alimento", "tienda", "brasa", "postre", "reposteria", "pasteleria",
+      "panaderia", "torta", "cevicheria", "menu", "cafeteria", "insumos de"), ALIMENTOS),
+    (("importo", "importador", "importa", "mercaderia", "compro en dolares"), IMPORTADOR),
     (("exporto", "exportador", "exporta", "agroexport"), EXPORTADOR),
-    (("bodega", "restaurante", "pollo", "comida", "alimento", "tienda", "brasa"), ALIMENTOS),
+    (("pesca",), PESCA),
 ]
 DOCUMENTOS = ("reporte", "documento", "bcrp dice", "segun", "proyeccion", "proyecta", "espera", "se espera", "expectativa",
               "por que", "causa", "comunicado", "enfen", "programa monetario", "decidi", "decision", "pronostico", "alerta")
-NEGOCIO = ("expuest", "riesgo", "semaforo", "mi negocio", "tengo un", "tengo una", "soy ", "que hago", "plan", "afecta")
+NEGOCIO = ("expuest", "riesgo", "semaforo", "mi negocio", "tengo un", "tengo una", "soy ", "que hago", "plan", "afecta",
+           "emprendimiento", "vendo", "compro", "me conviene")
 CIUDADES = ("piura", "paita", "sullana", "talara", "ancash", "chimbote", "libertad", "trujillo", "ica", "pisco", "lima", "callao")
-PESQUERO = ("pesca", "pesquer", "anchoveta", "harina", "pescado", "puerto", "desembarque")
+PESQUERO = ("pesca", "pesquer", "anchoveta", "harina de pescado", "planta de harina", "pescado", "puerto", "desembarque", "cevicheria")
 MAX_HERRAMIENTAS = 5
 # Letras de otros alfabetos: a veces los modelos Lite se "escapan" a otro idioma en medio del texto.
 OTRO_ALFABETO = re.compile(r"[Ѐ-ӿ֐-׿؀-ۿऀ-ॿ฀-๿぀-ヿ一-鿿가-힯]")
