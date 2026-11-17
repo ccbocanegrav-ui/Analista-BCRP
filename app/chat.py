@@ -270,11 +270,13 @@ class SinModeloDisponible(RuntimeError):
 
 CACHE_CHAT = Path(__file__).resolve().parents[1] / "data" / "cache_chat.json"
 CACHE_HORAS = 24
+# Cambiar este valor invalida todas las respuestas guardadas (p. ej. al corregir datos o reglas).
+CACHE_VERSION = "2026-11-16-fuentes"
 
 
 def _clave_cache(historial: list[dict], pregunta: str, contexto: str) -> str:
     import hashlib
-    base = json.dumps([[m["role"], m["content"]] for m in historial] + [pregunta.strip().lower(), contexto], ensure_ascii=False)
+    base = json.dumps([[m["role"], m["content"]] for m in historial] + [pregunta.strip().lower(), contexto, CACHE_VERSION], ensure_ascii=False)
     return hashlib.sha256(base.encode("utf-8")).hexdigest()
 
 
